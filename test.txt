@@ -1,0 +1,1 @@
+C:\NewProject\cello.wav 44 80 60 0 127 60
