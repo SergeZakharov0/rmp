@@ -150,6 +150,7 @@ void NewProjectAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuf
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    keyboardState.processNextMidiBuffer (midiMessages, 0, numSamples, true);
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
     // Make sure to reset the state if your inner loop is processing
@@ -157,6 +158,19 @@ void NewProjectAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuf
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
     synth.renderNextBlock (buffer, midiMessages, 0, numSamples); 
+    
+    auto *buff_ptr0 = buffer.getWritePointer(0); //Left channel buffer
+    auto *buff_ptr1 = buffer.getWritePointer(1); //Right channel buffer
+    float panVal = (pan.getValue() + 100.0f) * 0.005f;
+    float volVal = volume.getValue() * 0.01f;
+    float gainCh0 = volVal * (1.0f - panVal);
+    float gainCh1 = volVal * panVal;
+    for(auto sample = 0; sample < numSamples; ++sample)
+    {
+        buff_ptr0[sample] *= gainCh0;
+        buff_ptr1[sample] *= gainCh1;
+    }
+    
 }
 
 //==============================================================================
@@ -189,4 +203,19 @@ void NewProjectAudioProcessor::setStateInformation (const void* data, int sizeIn
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new NewProjectAudioProcessor();
+}
+
+MidiKeyboardState& NewProjectAudioProcessor::getKBState()
+{
+    return keyboardState;
+}
+
+Slider& NewProjectAudioProcessor::getMVSlider()
+{
+    return volume;
+}
+
+Slider& NewProjectAudioProcessor::getPSlider()
+{
+    return pan;
 }

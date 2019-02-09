@@ -61,6 +61,7 @@ LayeredSamplesSound::LayeredSamplesSound(const char *config_file) {
         temp_pointer.reset (new AudioBuffer<float> (2, length + 4));
         source->read (temp_pointer.get(), 0, length + 4, 0, true, true);
         
+        //TODO: custom tone shifter
         for (int stepNote = lowNote; stepNote <= topNote; ++stepNote)
 			for (int stepVel = lowVel; stepVel <= topVel; ++stepVel) {
 				fullData[stepNote][stepVel] = temp_pointer;

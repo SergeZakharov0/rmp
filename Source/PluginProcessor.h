@@ -57,9 +57,17 @@ public:
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    //==============================================================================
+    MidiKeyboardState& getKBState();
+    Slider& getMVSlider();
+    Slider& getPSlider();
+
 private:
     //==============================================================================
     rmpSynth synth;
     int numSamples;
+    MidiKeyboardState keyboardState;
+    Slider volume;
+    Slider pan;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NewProjectAudioProcessor)
 };
