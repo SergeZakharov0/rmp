@@ -20,13 +20,17 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
     setSize (1200, 300);
     strcpy(message, "I am initial");
     
-    addAndMakeVisible(panSlider);
+    panSlider.setName("pan");
+    panSlider.addListener( static_cast<Slider::Listener*>(&processor) );
     panSlider.setRange( -100, 100, 1);
+    addAndMakeVisible(panSlider);
     panLabel.setText("Pan", dontSendNotification);
     panLabel.attachToComponent(&panSlider, true);
     
-    addAndMakeVisible(masterVolSlider);
+    masterVolSlider.setName("volume");
+    masterVolSlider.addListener( static_cast<Slider::Listener*>(&processor) );
     masterVolSlider.setRange(0, 100, 1);
+    addAndMakeVisible(masterVolSlider);
     masterVolSlider.setValue(100);
     masterVolLabel.setText("Volume", dontSendNotification);
     masterVolLabel.attachToComponent(&masterVolSlider, true);

@@ -37,8 +37,8 @@ private:
     MidiKeyboardState& keyboardState = processor.getKBState();
     MidiKeyboardComponent keyboardComponent  { keyboardState, MidiKeyboardComponent::horizontalKeyboard};
     
-    Slider& masterVolSlider = processor.getMVSlider();
-    Slider& panSlider = processor.getPSlider();
+    Slider masterVolSlider;
+    Slider panSlider;
     Label masterVolLabel;
     Label panLabel;
     

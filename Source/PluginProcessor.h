@@ -17,7 +17,8 @@
 //==============================================================================
 /**
 */
-class NewProjectAudioProcessor  : public AudioProcessor
+class NewProjectAudioProcessor  : public AudioProcessor,
+                                  public Slider::Listener
 {
 public:
     //==============================================================================
@@ -59,15 +60,20 @@ public:
 
     //==============================================================================
     MidiKeyboardState& getKBState();
-    Slider& getMVSlider();
-    Slider& getPSlider();
+    
+    //==========================================================================
+    void applyVolToBuffer( AudioBuffer<float>& buffer );
+    void volValChanged(float val);
+    void panValChanged(float val);
+    void sliderValueChanged (Slider* slider) override;
 
 private:
     //==============================================================================
     rmpSynth synth;
     int numSamples;
     MidiKeyboardState keyboardState;
-    Slider volume;
-    Slider pan;
+    static const int maxBufferSize = 2048;
+    float volume;
+    float pan;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NewProjectAudioProcessor)
 };
