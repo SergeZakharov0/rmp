@@ -24,16 +24,41 @@ NewProjectAudioProcessor::NewProjectAudioProcessor()
                        )
 #endif
 {
-    for (auto i = 0; i < 4; ++i)
-    {
-        synth.addVoice (new LayeredSamplesVoice());    // and these ones play the sampled sounds
-    }
-    numSamples = 0;
-    synth.addSound(new LayeredSamplesSound("C:\\NewProject\\test.txt"));
-    
-    volume = 127;
-    pan = 0;
+	numSamples = 0;
+	volume = 127;
+	pan = 0;
+ 
+	for (auto i = 0; i < 128; ++i)
+        synth.addVoice (new LayeredSamplesVoice()); 
+	
+	File datafile = File::getCurrentWorkingDirectory().getChildFile(".rmpdata");
+	if (!datafile.getSize()) {
+		FileChooser myChooser("The rompler was not correctly installed. Please specify the library folder",
+			File::getSpecialLocation(File::userHomeDirectory));
+		if (myChooser.browseForDirectory())
+			libraryPath = myChooser.getResult().getFullPathName();
+		datafile.replaceWithText(libraryPath);
+	}
+	else
+		libraryPath = datafile.loadFileAsString();
+
+
+	synth.setCurrentPlaybackSampleRate(48000);
 }
+
+void NewProjectAudioProcessor::applyInstrumentConfig(String config) {
+	synth.clearSounds();
+	
+	File configFile(config);
+	XmlDocument doc(configFile);
+	String library_data_folder(config.upToLastOccurrenceOf(String("\\"), false, true));
+	
+	std::unique_ptr<XmlElement> main_element(doc.getDocumentElement());
+	forEachXmlChildElement(*main_element, instr_item) {
+		if (instr_item->hasTagName("layer"))
+			synth.addSound(new LayeredSamplesSound(instr_item, library_data_folder, synth.getSampleRate()));
+		}
+	}
 
 NewProjectAudioProcessor::~NewProjectAudioProcessor()
 {

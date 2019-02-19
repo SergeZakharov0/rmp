@@ -1,0 +1,31 @@
+<instrument>
+	<layer>
+		<box>
+			<mainnote>44</mainnote>
+			<lowestnote>20</lowestnote>
+			<highestnote>70</highestnote>
+			
+			<mainvel>50</mainvel>
+			<lowestvel>0</lowestvel>
+			<highestvel>127</highestvel>
+			<transpose>basic</transpose>
+			<soundfile>sine.wav</soundfile>
+		</box>
+		<effects>
+			<volume>
+				<value>60</value>
+			</volume>
+			<pan>
+				<value>50</value>
+			</pan>
+		</effects>		
+	</layer>
+	<effects>
+		<volume>
+			<value>60</value>
+		</volume>
+		<pan>
+			<value>50</value>
+		</pan>
+	</effects>
+</instrument>

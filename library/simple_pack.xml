@@ -1,0 +1,27 @@
+<pack>
+	<name>Simple Pack</name>
+	<folder>
+		<name>Primitives</name>
+		<description>Just sinuses and cosinuses</description>
+		<instrument>
+			<name>One-Sine</name>
+			<description>A sine wave</description>
+			<creator>Sergey Zakharov</creator>
+			<file>one_sine\one_sine.xml</file>
+		</instrument>
+		<instrument>
+			<name>Two-Sine</name>
+			<description>A two sine-waves in octave</description>
+			<creator>Sergey Zakharov</creator>
+			<file>two_sine\two_sine.xml</file>
+		</instrument>
+		<instrument>
+			<name>Two-Sine and Noise</name>
+			<description>A two sine-waves in octave and noise</description>
+			<creator>Sergey Zakharov</creator>
+			<file>two_sine_noise\two_sine_noise.xml</file>
+		</instrument>
+	</folder>
+	<path>simple_pack_data</path>
+	<description>Contains of a simple instruments examples</description>
+</pack>

@@ -18,7 +18,6 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (1200, 300);
-    strcpy(message, "I am initial");
     
     panSlider.setName("pan");
     panSlider.addListener( static_cast<Slider::Listener*>(&processor) );
@@ -35,6 +34,23 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
     masterVolLabel.setText("Volume", dontSendNotification);
     masterVolLabel.attachToComponent(&masterVolSlider, true);
     
+	File libraryDir(processor.libraryPath);
+	Array<File> childFiles = libraryDir.findChildFiles(2, false, String("*.xml"));
+	XmlElement *main = new XmlElement(String("main"));
+
+	for (int step = 0; step < childFiles.size(); ++step) {
+		XmlElement *ex = new XmlElement(*parseXML(childFiles[step]).get());
+		main->addChildElement(ex);
+		}
+
+	listModel = std::make_shared<myListBoxModel>(main, &processor, &listBox);
+	listBox.setModel(listModel.get());
+	listBox.setBounds(Rectangle<int>(500, 20, 400, 200));
+	listBox.getHeader().addColumn(String("one"), 1, 100);
+	listBox.getHeader().addColumn(String("two"), 2, 100);
+	listBox.getHeader().addColumn(String("three"), 3, 100);
+	listBox.getHeader().addColumn(String("four"), 4, 100);
+	addAndMakeVisible(listBox);
     addAndMakeVisible (keyboardComponent);
 }
 
@@ -48,10 +64,6 @@ void NewProjectAudioProcessorEditor::paint (Graphics& g)
     // (Our component is opaque, so we must completely fill the background with a solid colour)
    
     g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
-
-    g.setColour (Colours::white);
-    g.setFont (15.0f);
-    g.drawFittedText (message, getLocalBounds(), Justification::centred, 1);
     
 }
 

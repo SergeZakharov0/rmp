@@ -24,8 +24,6 @@ void VelocityBasedSynthesiser::noteOn (const int midiChannel,
             continue;
         if (sound->appliesToNoteAndVelocity (midiNoteNumber, velocity) && sound->appliesToChannel (midiChannel))
         {
-            // If hitting a note that's still ringing, stop it first (it could be
-            // still playing because of the sustain or sostenuto pedal).
             for (auto* voice : voices)
                 if (voice->getCurrentlyPlayingNote() == midiNoteNumber && voice->isPlayingChannel (midiChannel))
                     stopVoice (voice, 1.0f, true);
@@ -37,46 +35,98 @@ void VelocityBasedSynthesiser::noteOn (const int midiChannel,
 }
 
 LayeredSamplesSound::LayeredSamplesSound() {
-    for (int note = 0; note < 128; ++note) 
-        for (int vel = 0; vel < 128; ++vel) 
-			fullDataLength[note][vel] = 0;
+	this->clear();
     }
     
-LayeredSamplesSound::LayeredSamplesSound(const char *config_file) {
-    FILE *config = fopen(config_file, "r+");
-    int lowNote, topNote, currentNote;
-    int lowVel, topVel, currentVel;
-    char filename[128];
-    WavAudioFormat wav_decoder;
-	for (int note = 0; note < 128; ++note)
-		for (int vel = 0; vel < 128; ++vel)
-			fullDataLength[note][vel] = 0;
-   while (!feof(config)) {
-	   fscanf(config, "%s %d %d %d %d %d %d\n", filename, &lowNote, &topNote, &currentNote, &lowVel, &topVel, &currentVel);
-	   FileInputStream *input_stream = new FileInputStream(File(String(filename)));
-        AudioFormatReader *source = wav_decoder.createReaderFor(input_stream, false);
-        std::shared_ptr< AudioBuffer<float> > temp_pointer;
-        
-        int length = source->lengthInSamples;
-        temp_pointer.reset (new AudioBuffer<float> (2, length + 4));
-        source->read (temp_pointer.get(), 0, length + 4, 0, true, true);
-        
-        //TODO: custom tone shifter
-        for (int stepNote = lowNote; stepNote <= topNote; ++stepNote)
-			for (int stepVel = lowVel; stepVel <= topVel; ++stepVel) {
+LayeredSamplesSound::LayeredSamplesSound(XmlElement *layer_item, String path, float hostSampleRate) {
+	this->clear();
+
+	forEachXmlChildElement(*layer_item, box_level_item) {
+		if (box_level_item->hasTagName("name"))
+			this->name = box_level_item->getAllSubText();
+		if (box_level_item->hasTagName("box")) {
+			soundBox tempBox;
+			forEachXmlChildElement(*box_level_item, params_item) {
+				if (params_item->hasTagName("mainnote"))
+					tempBox.mainNote = params_item->getAllSubText().getIntValue();
+				if (params_item->hasTagName("lowestnote"))
+					tempBox.lowestNote = params_item->getAllSubText().getIntValue();
+				if (params_item->hasTagName("highestnote"))
+					tempBox.highestNote = params_item->getAllSubText().getIntValue();
+				if (params_item->hasTagName("mainvel"))
+					tempBox.mainVel = params_item->getAllSubText().getIntValue();
+				if (params_item->hasTagName("lowestvel"))
+					tempBox.lowestVel = params_item->getAllSubText().getIntValue();
+				if (params_item->hasTagName("highestvel"))
+					tempBox.highestVel = params_item->getAllSubText().getIntValue();
+				if (params_item->hasTagName("transpose"))
+					tempBox.transposeMethod = params_item->getAllSubText();
+				if (params_item->hasTagName("soundfile"))
+					tempBox.soundfile = path + String("\\") + params_item->getAllSubText();
+			}
+			this->appendBox(tempBox, hostSampleRate);
+		}
+	}
+}
+
+void LayeredSamplesSound::appendBox(soundBox tempBox, float hostSampleRate) {
+	
+	WavAudioFormat wav_decoder;
+	FileInputStream *input_stream = new FileInputStream(tempBox.soundfile);
+	AudioFormatReader *source = wav_decoder.createReaderFor(input_stream, false);
+
+	std::shared_ptr< AudioBuffer<float> > temp_pointer;
+
+	double ratio = source->sampleRate / hostSampleRate;
+
+	AudioBuffer<float> base(2, source->lengthInSamples + 4);
+	source->read(&base, 0, source->lengthInSamples + 4, 0, true, true);
+
+	int length = (int)((float)base.getNumSamples()) / ratio;
+	temp_pointer.reset(new AudioBuffer<float>(2, length));
+	resample(base, *temp_pointer, ratio);
+
+	std::list<std::shared_ptr< AudioBuffer<float> >> used_ptrs;
+
+	for (int stepNote = tempBox.lowestNote; stepNote <= tempBox.highestNote; ++stepNote)
+		for (int stepVel = tempBox.lowestVel; stepVel <= tempBox.highestVel; ++stepVel) {
+			if (!fullData[stepNote][stepVel]) {
 				fullData[stepNote][stepVel] = temp_pointer;
 				fullDataLength[stepNote][stepVel] = length;
+			}
+			else {
+				if (std::find(used_ptrs.begin(), used_ptrs.end(), fullData[stepNote][stepVel]) != used_ptrs.end())
+					continue;
+
+				if (fullData[stepNote][stepVel]->getNumSamples() < temp_pointer->getNumSamples()) {
+					fullData[stepNote][stepVel]->setSize(fullData[stepNote][stepVel]->getNumChannels(),
+						temp_pointer->getNumSamples(), true, true);
+					fullDataLength[stepNote][stepVel] = temp_pointer->getNumSamples();
 				}
-        
-        delete input_stream;
-        
-        }
-    fclose(config);
-    
+
+				fullData[stepNote][stepVel]->addFrom(0, 0, *temp_pointer, 0, 0, temp_pointer->getNumSamples());
+				fullData[stepNote][stepVel]->addFrom(1, 0, *temp_pointer, 1, 0, temp_pointer->getNumSamples());
+
+				used_ptrs.push_back(fullData[stepNote][stepVel]);
+			}
+
+		}
+	delete source;
 }
     
 LayeredSamplesSound::~LayeredSamplesSound() {}
+
+void LayeredSamplesSound::resample(AudioBuffer<float> &base, AudioBuffer<float> &resampled, float ratio) {
+    ScopedPointer<LagrangeInterpolator> resampler = new LagrangeInterpolator();
     
+    const float **inputs  = base.getArrayOfReadPointers();
+    float **outputs = resampled.getArrayOfWritePointers();
+    for (int c = 0; c < resampled.getNumChannels(); c++)
+    {
+	    resampler->reset();
+	    resampler->process(ratio, inputs[c], outputs[c], resampled.getNumSamples());
+    }
+}
     
 bool LayeredSamplesSound::appliesToNote(int midiNoteNumber) {
     for (int vel = 0 ; vel < 128; ++vel)
@@ -93,7 +143,13 @@ bool LayeredSamplesSound::appliesToNoteAndVelocity(int midiNoteNumber, float vel
     
 bool LayeredSamplesSound::appliesToChannel(int) {
     return true;}
-    
+ 
+void LayeredSamplesSound::clear() {
+	for (int note = 0; note < 128; ++note)
+		for (int vel = 0; vel < 128; ++vel)
+			fullDataLength[note][vel] = 0;
+}
+
 void rmpSynth::renderVoices (AudioBuffer<float>& buffer, int startSample, int numSamples) 
 {
     for (auto* voice : voices)

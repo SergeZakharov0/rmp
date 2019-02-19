@@ -12,6 +12,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <list>
+#include <algorithm>
 
 class EffectRack {
     public:
@@ -45,21 +46,36 @@ class LayeredSamplesSound : public VelocityBasedSound
 {
     public:
     LayeredSamplesSound();
-    LayeredSamplesSound(const char *config_file);
+    LayeredSamplesSound(XmlElement *layer_item, String path, float hostSampleRate);
     ~LayeredSamplesSound();
 
     bool appliesToNote(int midiNoteNumber) override;
     bool appliesToNoteAndVelocity(int midiNoteNumber, float velocity);
     bool appliesToChannel (int midiChannel) override;
-    
+
+    void resample(AudioBuffer<float> &base, AudioBuffer<float> &resampled, float ratio);
+
     std::shared_ptr< AudioBuffer<float> > getData(int currentMidiNoteNumber, float currentVelocity) {
         return fullData[currentMidiNoteNumber][int(currentVelocity*128)]; };
     int getDataLength(int midiNoteNumber, float velocity) {
         return fullDataLength[midiNoteNumber][int(velocity*128)]; };
 
     protected:
+	void clear();
     std::shared_ptr< AudioBuffer<float> > fullData[128][128];
     unsigned int fullDataLength[128][128];
+
+	String name;
+	
+	struct soundBox {
+		uint8 mainNote, lowestNote, highestNote;
+		uint8 mainVel, lowestVel, highestVel;
+		String soundfile, transposeMethod;
+		};
+	void appendBox(soundBox tempBox, float hostSampleRate);
+	std::list<soundBox> boxes;
+
+	struct EffectRack {} effectRack;
 
     private:
     JUCE_LEAK_DETECTOR (LayeredSamplesSound)

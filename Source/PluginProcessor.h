@@ -27,6 +27,7 @@ public:
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+	void applyInstrumentConfig(String config);
     void releaseResources() override;
 
    #ifndef JucePlugin_PreferredChannelConfigurations
@@ -67,6 +68,7 @@ public:
     void panValChanged(float val);
     void sliderValueChanged (Slider* slider) override;
 
+	String libraryPath;
 private:
     //==============================================================================
     rmpSynth synth;
