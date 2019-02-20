@@ -13,6 +13,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <list>
 #include <algorithm>
+#include "SQLInputSource.h"
 
 class EffectRack {
     public:
@@ -46,7 +47,7 @@ class LayeredSamplesSound : public VelocityBasedSound
 {
     public:
     LayeredSamplesSound();
-    LayeredSamplesSound(XmlElement *layer_item, String path, float hostSampleRate);
+    LayeredSamplesSound(XmlElement *layer_item, SQLInputSource *source, float hostSampleRate);
     ~LayeredSamplesSound();
 
     bool appliesToNote(int midiNoteNumber) override;
@@ -70,9 +71,13 @@ class LayeredSamplesSound : public VelocityBasedSound
 	struct soundBox {
 		uint8 mainNote, lowestNote, highestNote;
 		uint8 mainVel, lowestVel, highestVel;
-		String soundfile, transposeMethod;
+		String transposeMethod;
+		void *soundfile_data;
+		size_t soundfile_size;
+		soundBox() {};
+		~soundBox() { free(soundfile_data); }
 		};
-	void appendBox(soundBox tempBox, float hostSampleRate);
+	void appendBox(soundBox &tempBox, float hostSampleRate);
 	std::list<soundBox> boxes;
 
 	struct EffectRack {} effectRack;

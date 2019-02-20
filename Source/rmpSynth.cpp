@@ -10,6 +10,7 @@
 
 #include "rmpSynth.h"
 #include <math.h>
+#include <stdlib.h>
 
 void VelocityBasedSynthesiser::noteOn (const int midiChannel,
                                        const int midiNoteNumber,
@@ -38,7 +39,7 @@ LayeredSamplesSound::LayeredSamplesSound() {
 	this->clear();
     }
     
-LayeredSamplesSound::LayeredSamplesSound(XmlElement *layer_item, String path, float hostSampleRate) {
+LayeredSamplesSound::LayeredSamplesSound(XmlElement *layer_item, SQLInputSource *source, float hostSampleRate) {
 	this->clear();
 
 	forEachXmlChildElement(*layer_item, box_level_item) {
@@ -61,18 +62,24 @@ LayeredSamplesSound::LayeredSamplesSound(XmlElement *layer_item, String path, fl
 					tempBox.highestVel = params_item->getAllSubText().getIntValue();
 				if (params_item->hasTagName("transpose"))
 					tempBox.transposeMethod = params_item->getAllSubText();
-				if (params_item->hasTagName("soundfile"))
-					tempBox.soundfile = path + String("\\") + params_item->getAllSubText();
+				if (params_item->hasTagName("soundfile")) {
+					String soundfile = String(params_item->getAllSubText());
+					MemoryInputStream *stream = (MemoryInputStream *)source->createInputStreamFor(soundfile);
+					tempBox.soundfile_size = stream->getDataSize();
+					tempBox.soundfile_data = malloc(tempBox.soundfile_size);
+					memcpy(tempBox.soundfile_data, stream->getData(), tempBox.soundfile_size);
+					delete stream;
+					}
 			}
 			this->appendBox(tempBox, hostSampleRate);
 		}
 	}
 }
 
-void LayeredSamplesSound::appendBox(soundBox tempBox, float hostSampleRate) {
+void LayeredSamplesSound::appendBox(soundBox &tempBox, float hostSampleRate) {
 	
 	WavAudioFormat wav_decoder;
-	FileInputStream *input_stream = new FileInputStream(tempBox.soundfile);
+	MemoryInputStream *input_stream = new MemoryInputStream((const void *)tempBox.soundfile_data, tempBox.soundfile_size, true);
 	AudioFormatReader *source = wav_decoder.createReaderFor(input_stream, false);
 
 	std::shared_ptr< AudioBuffer<float> > temp_pointer;

@@ -13,6 +13,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginProcessor.h"
 #include <stdlib.h>
+#include "SQLInputSource.h"
 
 //==============================================================================
 /**
@@ -108,8 +109,12 @@ private:
 				String abs_path = now->getChildByName(String("file"))->getAllSubText();
 				while (!now->hasTagName(String("pack")))
 					now = data->findParentElementOf(now);
-				abs_path = processor->libraryPath + String("\\") + now->getChildByName(String("path"))->getAllSubText() + String("\\") + abs_path;
-				processor->applyInstrumentConfig(abs_path);
+				SQLInputSource dbsource(abs_path, now->getChildByName(String("filedesc"))->getAttributeValue(0));
+				MemoryInputStream *stream = (MemoryInputStream *)dbsource.createInputStream();
+				char *data = (char *)stream->getData();
+				XmlElement *ex = new XmlElement(*parseXML(String(CharPointer_UTF8(data))));
+				processor->applyInstrumentConfig(ex, &dbsource);
+				delete stream;
 				}
 			listbox->updateContent();
 			listbox->repaint();

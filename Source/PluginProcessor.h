@@ -12,6 +12,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "rmpSynth.h"
+#include "SQLInputSource.h"
 
 
 //==============================================================================
@@ -27,7 +28,7 @@ public:
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-	void applyInstrumentConfig(String config);
+	void applyInstrumentConfig(XmlElement *config, SQLInputSource *source);
     void releaseResources() override;
 
    #ifndef JucePlugin_PreferredChannelConfigurations

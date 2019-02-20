@@ -35,12 +35,19 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
     masterVolLabel.attachToComponent(&masterVolSlider, true);
     
 	File libraryDir(processor.libraryPath);
-	Array<File> childFiles = libraryDir.findChildFiles(2, false, String("*.xml"));
+	Array<File> childFiles = libraryDir.findChildFiles(2, false, String("*.rmp"));
 	XmlElement *main = new XmlElement(String("main"));
 
 	for (int step = 0; step < childFiles.size(); ++step) {
-		XmlElement *ex = new XmlElement(*parseXML(childFiles[step]).get());
+		SQLInputSource dbsource(String("desc.xml"), childFiles[step].getFullPathName());
+		MemoryInputStream *stream = (MemoryInputStream *)dbsource.createInputStream();
+		char *data = (char *)stream->getData();
+		XmlElement *ex = new XmlElement(*parseXML(String(CharPointer_UTF8(data))));
+		XmlElement *file_desc = new XmlElement(String("filedesc"));
+		file_desc->setAttribute(String("path"), childFiles[step].getFullPathName());
+		ex->addChildElement(file_desc);
 		main->addChildElement(ex);
+		delete stream;
 		}
 
 	listModel = std::make_shared<myListBoxModel>(main, &processor, &listBox);

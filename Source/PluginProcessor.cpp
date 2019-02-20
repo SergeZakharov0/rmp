@@ -46,17 +46,13 @@ NewProjectAudioProcessor::NewProjectAudioProcessor()
 	synth.setCurrentPlaybackSampleRate(48000);
 }
 
-void NewProjectAudioProcessor::applyInstrumentConfig(String config) {
+void NewProjectAudioProcessor::applyInstrumentConfig(XmlElement *config, SQLInputSource *source) {
 	synth.clearSounds();
 	
-	File configFile(config);
-	XmlDocument doc(configFile);
-	String library_data_folder(config.upToLastOccurrenceOf(String("\\"), false, true));
-	
-	std::unique_ptr<XmlElement> main_element(doc.getDocumentElement());
+	std::unique_ptr<XmlElement> main_element(config);
 	forEachXmlChildElement(*main_element, instr_item) {
 		if (instr_item->hasTagName("layer"))
-			synth.addSound(new LayeredSamplesSound(instr_item, library_data_folder, synth.getSampleRate()));
+			synth.addSound(new LayeredSamplesSound(instr_item, source, synth.getSampleRate()));
 		}
 	}
 
