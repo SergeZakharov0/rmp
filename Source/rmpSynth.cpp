@@ -9,6 +9,7 @@
 */
 
 #include "rmpSynth.h"
+#include "PitchShifter.h"
 #include <math.h>
 
 void VelocityBasedSynthesiser::noteOn (const int midiChannel,
@@ -64,9 +65,12 @@ LayeredSamplesSound::LayeredSamplesSound(const char *config_file) {
         //TODO: custom tone shifter
         for (int stepNote = lowNote; stepNote <= topNote; ++stepNote)
 			for (int stepVel = lowVel; stepVel <= topVel; ++stepVel) {
-				fullData[stepNote][stepVel] = temp_pointer;
+				fullData[stepNote][stepVel].reset (new AudioBuffer<float> (2, length + 4));
 				fullDataLength[stepNote][stepVel] = length;
 				}
+				
+		PitchShifter pitch_shifter(length+4);
+		pitch_shifter.applyShifter(temp_pointer, fullData, lowNote, topNote , lowVel, topVel);
         
         delete input_stream;
         
