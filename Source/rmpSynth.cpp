@@ -75,7 +75,6 @@ LayeredSamplesSound::LayeredSamplesSound(XmlElement *layer_item, SQLInputSource 
 			this->appendBox(tempBox, hostSampleRate);
 		}	
 	}
-	this->transposeBoxes();
 }
 
 void LayeredSamplesSound::appendBox(soundBox &tempBox, float hostSampleRate) {
@@ -95,55 +94,35 @@ void LayeredSamplesSound::appendBox(soundBox &tempBox, float hostSampleRate) {
 	temp_pointer.reset(new AudioBuffer<float>(2, length));
 	resample(base, *temp_pointer, ratio);
 
-	std::list<std::shared_ptr< AudioBuffer<float> >> used_ptrs;
+	PitchShifter pitch_shifter;
 
-	for (int stepNote = tempBox.lowestNote; stepNote <= tempBox.highestNote; ++stepNote)
+	for (int stepNote = tempBox.lowestNote; stepNote <= tempBox.highestNote; ++stepNote) {
+		std::shared_ptr< AudioBuffer<float> > transposed = pitch_shifter.transposeBuffer(temp_pointer, stepNote - tempBox.mainNote);
+		std::shared_ptr< AudioBuffer<float> > prev = 0;
 		for (int stepVel = tempBox.lowestVel; stepVel <= tempBox.highestVel; ++stepVel) {
-			if (!layerData[stepNote][stepVel]) {
-				layerData[stepNote][stepVel] = temp_pointer;
+			if (!fullData[stepNote][stepVel]) {
+				fullData[stepNote][stepVel] = transposed;
+				prev = 0;
 			}
 			else {
-				if (std::find(used_ptrs.begin(), used_ptrs.end(), layerData[stepNote][stepVel]) != used_ptrs.end())
-					continue;
-
-				if (layerData[stepNote][stepVel]->getNumSamples() < temp_pointer->getNumSamples()) {
-					layerData[stepNote][stepVel]->setSize(layerData[stepNote][stepVel]->getNumChannels(),
-						temp_pointer->getNumSamples(), true, true);
+				if (prev == fullData[stepNote][stepVel]) {
+					continue; }
+				prev = fullData[stepNote][stepVel];
+				if (fullData[stepNote][stepVel]->getNumSamples() < transposed->getNumSamples()) {
+					fullData[stepNote][stepVel]->setSize(fullData[stepNote][stepVel]->getNumChannels(),
+						transposed->getNumSamples(), true, true);
 				}
 
-				layerData[stepNote][stepVel]->addFrom(0, 0, *temp_pointer, 0, 0, temp_pointer->getNumSamples());
-				layerData[stepNote][stepVel]->addFrom(1, 0, *temp_pointer, 1, 0, temp_pointer->getNumSamples());
+				fullData[stepNote][stepVel]->addFrom(0, 0, *transposed, 0, 0, transposed->getNumSamples());
+				fullData[stepNote][stepVel]->addFrom(1, 0, *transposed, 1, 0, transposed->getNumSamples());
 
-				used_ptrs.push_back(layerData[stepNote][stepVel]);
 			}
-
-		}
-	delete source;
-}
-    
-
-void LayeredSamplesSound::transposeBoxes() {
-	PitchShifter pitch_shifter;
-	for (int stepNote = 0; stepNote < 128; ++stepNote)
-	{
-		std::shared_ptr <AudioBuffer<float> > prev;
-		for (int stepVel = 0; stepVel < 128; ++stepVel)
-		{
-			if (layerData[stepNote][stepVel]) {
-				if (layerData[stepNote][stepVel] != prev) {
-					fullData[stepNote][stepVel] = pitch_shifter.transposeBuffer(layerData[stepNote][stepVel], stepNote);
-					prev = layerData[stepNote][stepVel];
-				}
-				else {
-					fullData[stepNote][stepVel] = fullData[stepNote][stepVel - 1];
-				}
-				fullDataLength[stepNote][stepVel] = fullData[stepNote][stepVel]->getNumSamples();
-			}
-			else
-				fullDataLength[stepNote][stepVel] = 0;
+			fullDataLength[stepNote][stepVel] = fullData[stepNote][stepVel]->getNumSamples();
 		}
 	}
+	delete source;
 }
+   
 
 LayeredSamplesSound::~LayeredSamplesSound() {}
 
@@ -179,8 +158,7 @@ void LayeredSamplesSound::clear() {
 	for (int note = 0; note < 128; ++note)
 		for (int vel = 0; vel < 128; ++vel) {
 			fullDataLength[note][vel] = 0;
-			layerData[note][vel] = 0;
-			fullDataLength[note][vel] = 0;
+			fullData[note][vel] = 0;
 			}
 }
 
