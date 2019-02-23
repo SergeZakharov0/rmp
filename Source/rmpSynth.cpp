@@ -9,6 +9,7 @@
 */
 
 #include "rmpSynth.h"
+#include "PitchShifter.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -19,7 +20,7 @@ void VelocityBasedSynthesiser::noteOn (const int midiChannel,
     const ScopedLock sl (lock);
 
     for (auto* s : sounds)
-    {
+    {   
         VelocityBasedSound* sound = static_cast<VelocityBasedSound*> (s);
         if (!sound)
             continue;
@@ -92,32 +93,36 @@ void LayeredSamplesSound::appendBox(soundBox &tempBox, float hostSampleRate) {
 	int length = (int)((float)base.getNumSamples()) / ratio;
 	temp_pointer.reset(new AudioBuffer<float>(2, length));
 	resample(base, *temp_pointer, ratio);
-
-	std::list<std::shared_ptr< AudioBuffer<float> >> used_ptrs;
-
+	
+    PitchShifter pitch_shifter;
 	for (int stepNote = tempBox.lowestNote; stepNote <= tempBox.highestNote; ++stepNote)
-		for (int stepVel = tempBox.lowestVel; stepVel <= tempBox.highestVel; ++stepVel) {
-			if (!fullData[stepNote][stepVel]) {
-				fullData[stepNote][stepVel] = temp_pointer;
-				fullDataLength[stepNote][stepVel] = length;
+	{
+	    for (int stepVel = tempBox.highestVel; stepVel <= tempBox.highestVel; ++stepVel) 
+		{
+		    std::shared_ptr <AudioBuffer<float> > transposed_buffer = pitch_shifter.transposeBuffer(temp_pointer, stepNote);
+			if (!fullData[stepNote][stepVel]) 
+			{
+			    fullData[stepNote][stepVel] = transposed_buffer;
+				fullDataLength[stepNote][stepVel] = transposed_buffer->getNumSamples();
 			}
+			
 			else {
-				if (std::find(used_ptrs.begin(), used_ptrs.end(), fullData[stepNote][stepVel]) != used_ptrs.end())
-					continue;
 
-				if (fullData[stepNote][stepVel]->getNumSamples() < temp_pointer->getNumSamples()) {
+				if (fullData[stepNote][stepVel]->getNumSamples() < transposed_buffer->getNumSamples()) {
 					fullData[stepNote][stepVel]->setSize(fullData[stepNote][stepVel]->getNumChannels(),
-						temp_pointer->getNumSamples(), true, true);
-					fullDataLength[stepNote][stepVel] = temp_pointer->getNumSamples();
+						transposed_buffer->getNumSamples(), true, true);
+					fullDataLength[stepNote][stepVel] = transposed_buffer->getNumSamples();
 				}
+                
+				fullData[stepNote][stepVel]->addFrom(0, 0, *transposed_buffer, 0, 0, transposed_buffer->getNumSamples());
+				fullData[stepNote][stepVel]->addFrom(1, 0, *transposed_buffer, 1, 0, transposed_buffer->getNumSamples());
 
-				fullData[stepNote][stepVel]->addFrom(0, 0, *temp_pointer, 0, 0, temp_pointer->getNumSamples());
-				fullData[stepNote][stepVel]->addFrom(1, 0, *temp_pointer, 1, 0, temp_pointer->getNumSamples());
-
-				used_ptrs.push_back(fullData[stepNote][stepVel]);
 			}
+			
 
 		}
+	}
+    
 	delete source;
 }
     
