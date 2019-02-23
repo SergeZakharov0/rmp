@@ -63,7 +63,8 @@ class LayeredSamplesSound : public VelocityBasedSound
 
     protected:
 	void clear();
-    std::shared_ptr< AudioBuffer<float> > fullData[128][128];
+    std::shared_ptr< AudioBuffer<float> > layerData[128][128];
+	std::shared_ptr< AudioBuffer<float> > fullData[128][128];
     unsigned int fullDataLength[128][128];
 
 	String name;
@@ -78,6 +79,7 @@ class LayeredSamplesSound : public VelocityBasedSound
 		~soundBox() { free(soundfile_data); }
 		};
 	void appendBox(soundBox &tempBox, float hostSampleRate);
+	void transposeBoxes();
 	std::list<soundBox> boxes;
 
 	struct EffectRack {} effectRack;
