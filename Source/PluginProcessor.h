@@ -12,6 +12,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "rmpSynth.h"
+#include "SQLInputSource.h"
 
 
 //==============================================================================
@@ -27,6 +28,7 @@ public:
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+	void applyInstrumentConfig(XmlElement *config, SQLInputSource *source);
     void releaseResources() override;
 
    #ifndef JucePlugin_PreferredChannelConfigurations
@@ -67,6 +69,7 @@ public:
     void panValChanged(float val);
     void sliderValueChanged (Slider* slider) override;
 
+	String libraryPath;
 private:
     //==============================================================================
     rmpSynth synth;
