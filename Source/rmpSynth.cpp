@@ -162,7 +162,7 @@ void rmpSynth::renderVoices (AudioBuffer<float>& buffer, int startSample, int nu
     for (auto* voice : voices)
         voice->renderNextBlock (buffer, startSample, numSamples);
     
-    rack.applyEffects (buffer, startSample, numSamples);
+//    rack.applyEffects (buffer, startSample, numSamples);
 }
 
 

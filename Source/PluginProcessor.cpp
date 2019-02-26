@@ -185,6 +185,7 @@ void NewProjectAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuf
     
     
     //TODO: buffer of gain values for each sample
+	rack.applyEffects(buffer);
     applyVolToBuffer(buffer);
     
 }

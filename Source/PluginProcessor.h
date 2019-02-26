@@ -13,6 +13,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "rmpSynth.h"
 #include "SQLInputSource.h"
+#include "EffectRack.h"
 
 
 //==============================================================================
@@ -78,5 +79,6 @@ private:
     static const int maxBufferSize = 2048;
     float volume;
     float pan;
+	EffectRack rack;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NewProjectAudioProcessor)
 };

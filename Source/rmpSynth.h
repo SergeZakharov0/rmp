@@ -14,11 +14,11 @@
 #include <list>
 #include <algorithm>
 #include "SQLInputSource.h"
-
+/*
 class EffectRack {
     public:
     virtual void applyEffects(AudioBuffer<float>& buffer, int startSample, int numSamples) {};
-};
+};*/
 
 class VelocityBasedSound : public SynthesiserSound 
 {
@@ -40,7 +40,7 @@ class rmpSynth : public VelocityBasedSynthesiser
     public:
         void renderVoices (AudioBuffer<float>& buffer, int startSample, int numSamples) override;
     protected:
-        EffectRack rack;
+        //EffectRack rack;
 };
 
 class LayeredSamplesSound : public VelocityBasedSound 
@@ -80,7 +80,7 @@ class LayeredSamplesSound : public VelocityBasedSound
 	void appendBox(soundBox &tempBox, float hostSampleRate);
 	std::list<soundBox> boxes;
 
-	struct EffectRack {} effectRack;
+	//struct EffectRack {} effectRack;
 
     private:
     JUCE_LEAK_DETECTOR (LayeredSamplesSound)
@@ -103,7 +103,7 @@ class LayeredSamplesVoice : public SynthesiserVoice
     int currentMidiNoteNumber = 0;
     float currentVelocity = 0;
     int currentSamplePosition = 0;
-    EffectRack rack;
+    //EffectRack rack;
 
     private:
     template <typename floatType>
