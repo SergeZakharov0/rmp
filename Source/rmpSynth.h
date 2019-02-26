@@ -63,7 +63,7 @@ class LayeredSamplesSound : public VelocityBasedSound
 
     protected:
 	void clear();
-    std::shared_ptr< AudioBuffer<float> > fullData[128][128];
+	std::shared_ptr< AudioBuffer<float> > fullData[128][128];
     unsigned int fullDataLength[128][128];
 
 	String name;

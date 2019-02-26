@@ -11,6 +11,9 @@
     <GROUP id="{B5EA1DE6-5C6A-3053-6A75-227C1B25F6BE}" name="Source">
       <FILE id="VuamCz" name="EffectRack.cpp" compile="1" resource="0" file="Source/EffectRack.cpp"/>
       <FILE id="yMlbZG" name="EffectRack.h" compile="0" resource="0" file="Source/EffectRack.h"/>
+      <FILE id="ndXwgb" name="PitchShifter.cpp" compile="1" resource="0"
+            file="Source/PitchShifter.cpp"/>
+      <FILE id="WJCKGp" name="PitchShifter.h" compile="0" resource="0" file="Source/PitchShifter.h"/>
       <FILE id="FrrfFh" name="SQLInputSource.cpp" compile="1" resource="0"
             file="Source/SQLInputSource.cpp"/>
       <FILE id="LPG1K3" name="SQLInputSource.h" compile="0" resource="0"
@@ -48,6 +51,7 @@
         <MODULEPATH id="juce_gui_extra" path="../JUCE/modules"/>
         <MODULEPATH id="juce_opengl" path="../JUCE/modules"/>
         <MODULEPATH id="juce_video" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_dsp" path="../../../../../Programs/Coding/JUCE/modules"/>
       </MODULEPATHS>
     </VS2017>
   </EXPORTFORMATS>
@@ -62,6 +66,7 @@
     <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_cryptography" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
