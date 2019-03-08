@@ -44,6 +44,7 @@ NewProjectAudioProcessor::NewProjectAudioProcessor()
 
 
 	synth.setCurrentPlaybackSampleRate(48000);
+	rack = new EffectRack(48000);
 }
 
 void NewProjectAudioProcessor::applyInstrumentConfig(XmlElement *config, SQLInputSource *source) {
@@ -58,6 +59,7 @@ void NewProjectAudioProcessor::applyInstrumentConfig(XmlElement *config, SQLInpu
 
 NewProjectAudioProcessor::~NewProjectAudioProcessor()
 {
+	delete rack;
 }
 
 //==============================================================================
@@ -182,12 +184,8 @@ void NewProjectAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuf
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
     synth.renderNextBlock (buffer, midiMessages, 0, numSamples); 
-    
-    
-    //TODO: buffer of gain values for each sample
-	rack.applyEffects(buffer);
-    applyVolToBuffer(buffer);
-    
+   
+	rack->applyEffects(buffer);
 }
 
 //==============================================================================
@@ -227,44 +225,10 @@ MidiKeyboardState& NewProjectAudioProcessor::getKBState()
     return keyboardState;
 }
 
+EffectRack* NewProjectAudioProcessor::getListener()
+{
+	return rack;
+}
 
 //===================================================================================
-void NewProjectAudioProcessor::applyVolToBuffer( AudioBuffer<float>& buffer )
-{
-    auto *buff_ptr0 = buffer.getWritePointer(0); //Left channel buffer
-    auto *buff_ptr1 = buffer.getWritePointer(1); //Right channel buffer
-    
-    float panVal = (pan + 100.0f) * 0.005f;
-    float volVal = volume * 0.01f;
-    float gainCh0 = volVal * (1.0f - panVal);
-    float gainCh1 = volVal * panVal;
-    for(auto sample = 0; sample < numSamples; ++sample)
-    {
-        buff_ptr0[sample] *= gainCh0;
-        buff_ptr1[sample] *= gainCh1;
-    }
-    
-}
 
-void NewProjectAudioProcessor::volValChanged(float val)
-{
-    volume = val;
-    
-}
-
-void NewProjectAudioProcessor::panValChanged(float val)
-{
-    pan = val;
-}
-
-void NewProjectAudioProcessor::sliderValueChanged(Slider* slider)
-{
-    if( slider->getName().compare("pan") == 0 )
-    {
-        panValChanged( slider->getValue() );
-    }
-    else if( slider->getName().compare("volume") == 0 )
-    {
-        volValChanged( slider->getValue() );
-    }
-}

@@ -12,6 +12,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <list>
+#include "EffectRack.h"
 #include <algorithm>
 #include "SQLInputSource.h"
 /*
@@ -40,7 +41,7 @@ class rmpSynth : public VelocityBasedSynthesiser
     public:
         void renderVoices (AudioBuffer<float>& buffer, int startSample, int numSamples) override;
     protected:
-        //EffectRack rack;
+        LayerEffectRack rack;
 };
 
 class LayeredSamplesSound : public VelocityBasedSound 
@@ -103,7 +104,7 @@ class LayeredSamplesVoice : public SynthesiserVoice
     int currentMidiNoteNumber = 0;
     float currentVelocity = 0;
     int currentSamplePosition = 0;
-    //EffectRack rack;
+    LayerEffectRack rack;
 
     private:
     template <typename floatType>

@@ -17,23 +17,35 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (1200, 300);
+    setSize (1200, 600);
     
     panSlider.setName("pan");
-    panSlider.addListener( static_cast<Slider::Listener*>(&processor) );
+    panSlider.addListener( processor.getListener() );
     panSlider.setRange( -100, 100, 1);
     addAndMakeVisible(panSlider);
     panLabel.setText("Pan", dontSendNotification);
     panLabel.attachToComponent(&panSlider, true);
     
     masterVolSlider.setName("volume");
-    masterVolSlider.addListener( static_cast<Slider::Listener*>(&processor) );
+   masterVolSlider.addListener( processor.getListener() );
     masterVolSlider.setRange(0, 100, 1);
     addAndMakeVisible(masterVolSlider);
     masterVolSlider.setValue(100);
     masterVolLabel.setText("Volume", dontSendNotification);
     masterVolLabel.attachToComponent(&masterVolSlider, true);
     
+	addAndMakeVisible( ReverbPanel );
+	addAndMakeVisible(AdsrPanel);
+
+	auto sliderLeft = 120;
+
+	panSlider.setBounds(sliderLeft, 20, 200, 20);
+	masterVolSlider.setBounds(sliderLeft, 50, 200, 20);
+
+	AdsrPanel.setBounds(120, 100, 400, 150);
+	ReverbPanel.setBounds(120, 300, 400, 150);
+	
+
 	File libraryDir(processor.libraryPath);
 	Array<File> childFiles = libraryDir.findChildFiles(2, false, String("*.rmp"));
 	XmlElement *main = new XmlElement(String("main"));
@@ -76,12 +88,9 @@ void NewProjectAudioProcessorEditor::paint (Graphics& g)
 
 void NewProjectAudioProcessorEditor::resized()
 {
-    auto sliderLeft = 120;
     
-    panSlider .setBounds (sliderLeft, 20, 200, 20);
-    masterVolSlider.setBounds (sliderLeft, 50, 200, 20);
-    
-    keyboardComponent.setBounds (0, 236, getWidth() , 64);
+
+    keyboardComponent.setBounds (0, getHeight() - 64, getWidth() , 64);
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
 }

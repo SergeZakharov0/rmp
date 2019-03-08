@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="jexHtk" name="rmp" projectType="audioplug" jucerVersion="5.4.1"
+<JUCERPROJECT id="jexHtk" name="rmp" projectType="audioplug" jucerVersion="5.4.3"
               pluginFormats="buildStandalone,buildVST,buildVST3" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
               pluginVST3Category="Instrument,Sampler">
   <MAINGROUP id="LC6Y1T" name="rmp">
@@ -9,6 +9,12 @@
       <FILE id="qAgaNS" name="sqlite3.h" compile="0" resource="0" file="Source/SQLite/sqlite3.h"/>
     </GROUP>
     <GROUP id="{B5EA1DE6-5C6A-3053-6A75-227C1B25F6BE}" name="Source">
+      <FILE id="xQOXAG" name="EffectRackConfig.h" compile="0" resource="0"
+            file="Source/EffectRackConfig.h"/>
+      <FILE id="ZN9tE5" name="RackControlPanel.cpp" compile="1" resource="0"
+            file="Source/RackControlPanel.cpp"/>
+      <FILE id="RgLTql" name="RackControlPanel.h" compile="0" resource="0"
+            file="Source/RackControlPanel.h"/>
       <FILE id="VuamCz" name="EffectRack.cpp" compile="1" resource="0" file="Source/EffectRack.cpp"/>
       <FILE id="yMlbZG" name="EffectRack.h" compile="0" resource="0" file="Source/EffectRack.h"/>
       <FILE id="ndXwgb" name="PitchShifter.cpp" compile="1" resource="0"

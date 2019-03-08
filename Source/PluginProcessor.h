@@ -19,8 +19,7 @@
 //==============================================================================
 /**
 */
-class NewProjectAudioProcessor  : public AudioProcessor,
-                                  public Slider::Listener
+class NewProjectAudioProcessor  : public AudioProcessor
 {
 public:
     //==============================================================================
@@ -63,12 +62,8 @@ public:
 
     //==============================================================================
     MidiKeyboardState& getKBState();
-    
+	EffectRack* getListener();
     //==========================================================================
-    void applyVolToBuffer( AudioBuffer<float>& buffer );
-    void volValChanged(float val);
-    void panValChanged(float val);
-    void sliderValueChanged (Slider* slider) override;
 
 	String libraryPath;
 private:
@@ -79,6 +74,6 @@ private:
     static const int maxBufferSize = 2048;
     float volume;
     float pan;
-	EffectRack rack;
+	EffectRack *rack;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NewProjectAudioProcessor)
 };

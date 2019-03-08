@@ -12,6 +12,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginProcessor.h"
+#include "RackControlPanel.h"
 #include <stdlib.h>
 #include "SQLInputSource.h"
 
@@ -41,6 +42,11 @@ private:
     Slider panSlider;
     Label masterVolLabel;
     Label panLabel;
+
+	rmpReverbPanel ReverbPanel;
+	rmpAdsrPanel AdsrPanel;
+
+	
 
 	class myListBoxModel : public TableListBoxModel {
 	public:
