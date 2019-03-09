@@ -19,13 +19,10 @@ class BaseControlPanel : public Component,
 public:
 	BaseControlPanel();
 	~BaseControlPanel();
-
-	//void mouseDown(const MouseEvent &event) override;
-
-
 	
 	bool effectisOn;
 	Label lName;
+	//ImageComponent icOnOff;
 
 	Image imgKnob;
 	Image imgSwitchOn;
@@ -44,11 +41,14 @@ public:
 	~rmpReverbPanel();
 
 private:
+	ImageComponent icOnOff;
 	ImageComponent icDepth;
 	ImageComponent icWidth;
 	ImageComponent icDryWet;
 
-	ImageComponent icOnOff;
+	Label lDepth;
+	Label lWidth;
+	Label lDryWet;
 
 };
 
@@ -65,6 +65,12 @@ private:
 	ImageComponent icDecay;
 	ImageComponent icSustain;
 	ImageComponent icRelease;
+
+	Label lAttack;
+	Label lDecay;
+	Label lSustain;
+	Label lRelease;
+
 };
 
 class RackControlPanel : public Component

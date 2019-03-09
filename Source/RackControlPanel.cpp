@@ -19,7 +19,7 @@ BaseControlPanel::BaseControlPanel()
 	imgEffectOn = ImageFileFormat::loadFrom(File("C:/Projects/rmp/OnButton.png"));
 	imgEffectOff = ImageFileFormat::loadFrom(File("C:/Projects/rmp/OffButton.png"));
 
-	setSize(150, 80);
+	setSize(200, 150);
 }
 
 BaseControlPanel::~BaseControlPanel()
@@ -27,20 +27,18 @@ BaseControlPanel::~BaseControlPanel()
 	
 }
 
-
 //==================================================
 
 rmpReverbPanel::rmpReverbPanel()
 {
-	setSize(150, 100);
 	
 	addAndMakeVisible(icOnOff);
 	icOnOff.setSize(imgEffectOn.getWidth(), imgEffectOn.getHeight());
 	icOnOff.setImage( imgEffectOn );
-	icOnOff.setBounds(0, 0, icOnOff.getWidth(), icOnOff.getHeight());
+	icOnOff.setBounds( getWidth() - imgEffectOn.getWidth(), 0, icOnOff.getWidth(), icOnOff.getHeight());
 
 	lName.setText("Reverb", dontSendNotification);
-	lName.attachToComponent(this, true);
+	lName.attachToComponent(&icOnOff, true);
 
 	icDepth.setImage(imgKnob);
 	icWidth.setImage(imgKnob);
@@ -50,9 +48,17 @@ rmpReverbPanel::rmpReverbPanel()
 	addAndMakeVisible(icWidth);
 	addAndMakeVisible(icDryWet);
 
-	icDepth.setBounds(0, 40, 39, 39);
-	icWidth.setBounds(40, 40, 39, 39);
-	icDryWet.setBounds(80, 40, 39, 39);
+	icDepth.setBounds(25, 80, 50, 39);
+	icWidth.setBounds(75, 80, 50, 39);
+	icDryWet.setBounds(125, 80, 50, 39);
+
+	lDepth.setText("Depth", dontSendNotification);
+	lWidth.setText("Width", dontSendNotification);
+	lDryWet.setText("Dry/Wet", dontSendNotification);
+
+	lDepth.attachToComponent(&icDepth, false);
+	lWidth.attachToComponent(&icWidth, false);
+	lDryWet.attachToComponent(&icDryWet, false);
 
 }
 rmpReverbPanel::~rmpReverbPanel()
@@ -62,14 +68,13 @@ rmpReverbPanel::~rmpReverbPanel()
 //============================================
 rmpAdsrPanel::rmpAdsrPanel()
 {
-	setSize(200, 100);
 	addAndMakeVisible(icOnOff);
 	icOnOff.setImage(imgEffectOn);
-	icOnOff.setBounds(0, 0, imgEffectOn.getWidth(), imgEffectOn.getHeight());
+	icOnOff.setBounds(getWidth() - imgEffectOn.getWidth(), 0, imgEffectOn.getWidth(), imgEffectOn.getHeight());
 	
 	lName.setText("ADSR", dontSendNotification);
-	lName.attachToComponent(this, true);
-	lName.setTopLeftPosition(50, 0);
+	lName.attachToComponent(&icOnOff, true);
+	//lName.setTopLeftPosition(50, 0);
 
 	addAndMakeVisible(icAttack);
 	addAndMakeVisible(icDecay);
@@ -81,10 +86,20 @@ rmpAdsrPanel::rmpAdsrPanel()
 	icSustain.setImage(imgKnob);
 	icRelease.setImage(imgKnob);
 
-	icAttack.setBounds( 0, 50, 39, 39 );
-	icDecay.setBounds(40, 50, 39, 39);
-	icSustain.setBounds(80, 50, 39, 39);
-	icRelease.setBounds(120, 50, 39, 39);
+	icAttack.setBounds( 0, 80, 50, 39 );
+	icDecay.setBounds(50, 80, 50, 39);
+	icSustain.setBounds(100, 80, 50, 39);
+	icRelease.setBounds(150, 80, 50, 39);
+
+	lAttack.setText("Attack", dontSendNotification);
+	lDecay.setText("Decay", dontSendNotification);
+	lSustain.setText("Sustain", dontSendNotification);
+	lRelease.setText("Release", dontSendNotification);
+
+	lAttack.attachToComponent(&icAttack, false);
+	lDecay.attachToComponent(&icDecay, false);
+	lSustain.attachToComponent(&icSustain, false);
+	lRelease.attachToComponent(&icRelease, false);
 }
 
 rmpAdsrPanel::~rmpAdsrPanel()
