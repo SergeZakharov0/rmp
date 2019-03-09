@@ -29,11 +29,12 @@ class rmpReverb : public rmpEffect
 	    ~rmpReverb();
 
 		void setParams();
-
+		void setParams( ReverbParams parameters);
+		ReverbParams getParams();
 	    void applyEffect(AudioBuffer<float> &buffer) override;
 private:
 	void setSampleRate(const double sampleRate);
-	Reverb::Parameters params;
+	ReverbParams params;
 
 	Reverb reverb;
 };
@@ -44,8 +45,13 @@ class rmpADSR : public rmpEffect
 	    rmpADSR();
 	    ~rmpADSR();
 
+		AdsrParams getParams();
+		void setParams();
+		void setParams(AdsrParams parameters);
+
 	    void applyEffect(AudioBuffer<float> &buffer) override;
 private:
+	AdsrParams params;
 	ADSR adsr;
 	int startSample;
 	int endSample;
@@ -67,6 +73,12 @@ class EffectRack : public Slider::Listener,
 		void mouseDown(const MouseEvent &event) override;
 
         void onOffEffect(int id);
+
+		ReverbParams getReverbParams();
+		void setReverbParams(ReverbParams params);
+
+		AdsrParams getAdsrParams();
+		void setAdsrParams(AdsrParams params);
         
     private:
 		void applyVolToBuffer(AudioBuffer<float>& buffer);

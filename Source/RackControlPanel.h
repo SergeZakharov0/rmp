@@ -11,36 +11,51 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "EffectRack.h"
 
 //==============================================================================
-class BaseControlPanel : public Component,
-	public MouseListener
+class BaseControlPanel : public Component
 {
 public:
 	BaseControlPanel();
 	~BaseControlPanel();
+
+	const float angle_max_val = 4.7123889803847f;
+	const float angle_val = 2.3561944901923f;
+
+	void addRack(EffectRack *rack);
+	float calcKnobAngle(float param);
+	float calcParam(float knobAngle);
 	
 	bool effectisOn;
 	Label lName;
-	//ImageComponent icOnOff;
 
 	Image imgKnob;
 	Image imgSwitchOn;
 	Image imgSwitchOff;
 	Image imgEffectOn;
 	Image imgEffectOff;
+	EffectRack *effectRack;
+
 	
 
 	//JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RackControlPanel)
 };
 
-class rmpReverbPanel : public BaseControlPanel
+class rmpReverbPanel : public BaseControlPanel,
+	public MouseListener
+	                    
 {
 public:
 	rmpReverbPanel();
 	~rmpReverbPanel();
+	void init();
+	void mouseDown(const MouseEvent &event) override;
+	void mouseDrag(const MouseEvent &event) override;
 
 private:
+
+	bool effectIsOn;
 	ImageComponent icOnOff;
 	ImageComponent icDepth;
 	ImageComponent icWidth;
@@ -50,15 +65,24 @@ private:
 	Label lWidth;
 	Label lDryWet;
 
+	ReverbParams params;
+
 };
 
-class rmpAdsrPanel : public BaseControlPanel
+class rmpAdsrPanel : public BaseControlPanel,
+	public MouseListener
 {
 public:
 	rmpAdsrPanel();
 	~ rmpAdsrPanel();
 
+	void init();
+
+	void mouseDown(const MouseEvent &event) override;
+	void mouseDrag(const MouseEvent &event) override;
 private:
+
+	bool effectIsOn;
 	ImageComponent icOnOff;
 
 	ImageComponent icAttack;
@@ -71,15 +95,6 @@ private:
 	Label lSustain;
 	Label lRelease;
 
-};
-
-class RackControlPanel : public Component
-{
-public:
-	RackControlPanel();
-	~RackControlPanel();
-
-private:
-	rmpReverbPanel reverb;
-	rmpAdsrPanel adsr;
+	AdsrParams params;
+	
 };

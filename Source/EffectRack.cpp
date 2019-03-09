@@ -29,13 +29,13 @@ void rmpEffect::applyEffect(AudioBuffer<float> &buffer)
 //============================================================================
 rmpReverb::rmpReverb( const double sampleRate)
 {
-	params.dryLevel = 0.5f;
-	params.wetLevel = 0.5f;
-	params.roomSize = 0.5f;
+	
+	params.dryWet = 0.5f;
+	params.depth = 0.5f;
 	params.width = 0.5f;
 
 	setSampleRate(sampleRate);
-	setParams();
+	setParams(params);
 	
 }
 
@@ -51,7 +51,25 @@ void rmpReverb::setSampleRate(const double sampleRate)
 
 void rmpReverb::setParams()
 {
-	reverb.setParameters(params);
+	Reverb::Parameters rparams;
+	rparams.dryLevel = 1.0f - params.dryWet;
+	rparams.wetLevel = params.dryWet;
+	rparams.roomSize = params.depth;
+	rparams.width = params.width;
+
+	reverb.setParameters(rparams);
+}
+
+void rmpReverb::setParams( ReverbParams parameters )
+{
+	params = parameters;
+	setParams();
+	
+}
+
+ReverbParams rmpReverb::getParams()
+{
+	return params;
 }
 
 void rmpReverb::applyEffect(AudioBuffer<float> &buffer)
@@ -69,6 +87,15 @@ rmpADSR::rmpADSR()
 {
 	startSample = 0;
 	endSample = 0;
+
+	params.attack = 0.1f;
+	params.decay = 0.5f;
+	params.release = 0.5f;
+	params.sustain = 1.0f;
+
+	adsr.setSampleRate(48000);
+
+	setParams();
 }
 
 rmpADSR::~rmpADSR()
@@ -82,7 +109,31 @@ void rmpADSR::applyEffect(AudioBuffer<float> &buffer)
 	{
 		endSample = buffer.getNumSamples();
 	}
-	adsr.applyEnvelopeToBuffer(buffer, startSample, startSample);
+	adsr.applyEnvelopeToBuffer(buffer, startSample, endSample);
+}
+
+AdsrParams rmpADSR::getParams()
+{
+	return params;
+}
+
+void rmpADSR::setParams()
+{
+	ADSR::Parameters aparams;
+
+	aparams.attack = params.attack;
+	aparams.decay = params.decay;
+	aparams.release = params.release;
+	aparams.sustain = params.sustain;
+
+	adsr.setParameters(aparams);
+}
+
+void rmpADSR::setParams(AdsrParams parameters)
+{
+	params = parameters;
+	setParams();
+
 }
 
 
@@ -98,6 +149,8 @@ EffectRack::EffectRack(const double sampleRate)
 	{
 		effectIsOff[i] = false;
 	}
+
+	effectIsOff[rmpEffects::adsr] = true;
 
 }
 
@@ -188,6 +241,26 @@ void EffectRack::sliderValueChanged(Slider* slider)
 void EffectRack::mouseDown(const MouseEvent &event)
 {
 	
+}
+
+ReverbParams EffectRack::getReverbParams()
+{
+	return reverb->getParams();
+}
+
+void EffectRack::setReverbParams(ReverbParams params)
+{
+	reverb->setParams(params);
+}
+
+AdsrParams EffectRack::getAdsrParams()
+{
+	return adsr->getParams();
+}
+
+void EffectRack::setAdsrParams(AdsrParams params)
+{
+	adsr->setParams(params);
 }
 
 

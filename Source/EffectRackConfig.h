@@ -18,5 +18,21 @@ namespace rmpEffects
 		reverb
 	}EffectId;
 
+	
+
 	static const int commonEffectsVal = 2;
 }
+
+typedef struct {
+	float dryWet;
+	float depth;
+	float width;
+
+}ReverbParams;
+
+typedef struct {
+	float attack;
+	float decay;
+	float sustain;
+	float release;
+}AdsrParams;

@@ -42,8 +42,14 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
 	panSlider.setBounds(sliderLeft, 20, 200, 20);
 	masterVolSlider.setBounds(sliderLeft, 50, 200, 20);
 
+
 	AdsrPanel.setBounds(120, 100, 400, 150);
 	ReverbPanel.setBounds(120, 300, 400, 150);
+
+	ReverbPanel.addRack( processor.getListener() );
+	AdsrPanel.addRack(processor.getListener());
+	ReverbPanel.init();
+	AdsrPanel.init();
 	
 
 	File libraryDir(processor.libraryPath);
@@ -75,6 +81,7 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
 
 NewProjectAudioProcessorEditor::~NewProjectAudioProcessorEditor()
 {
+
 }
 
 //==============================================================================
