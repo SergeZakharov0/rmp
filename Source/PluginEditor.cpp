@@ -36,6 +36,7 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
     
 	addAndMakeVisible( ReverbPanel );
 	addAndMakeVisible(AdsrPanel);
+	addAndMakeVisible(funcPanel);
 
 	auto sliderLeft = 120;
 
@@ -45,9 +46,13 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
 
 	AdsrPanel.setBounds(120, 100, 400, 150);
 	ReverbPanel.setBounds(120, 300, 400, 150);
+	funcPanel.setBounds(550, 300, 400, 150);
 
 	ReverbPanel.addRack( processor.getListener() );
 	AdsrPanel.addRack(processor.getListener());
+	funcPanel.addRack(processor.getListener());
+	funcPanel.setEffects(&AdsrPanel, &ReverbPanel);
+
 	ReverbPanel.init();
 	AdsrPanel.init();
 	

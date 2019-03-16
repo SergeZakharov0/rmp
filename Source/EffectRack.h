@@ -32,6 +32,7 @@ class rmpReverb : public rmpEffect
 		void setParams( ReverbParams parameters);
 		ReverbParams getParams();
 	    void applyEffect(AudioBuffer<float> &buffer) override;
+		void setSingleParam(ReverbParam param, float val);
 private:
 	void setSampleRate(const double sampleRate);
 	ReverbParams params;
@@ -48,6 +49,7 @@ class rmpADSR : public rmpEffect
 		AdsrParams getParams();
 		void setParams();
 		void setParams(AdsrParams parameters);
+		void setSingleParam(AdsrParam param, float val);
 
 	    void applyEffect(AudioBuffer<float> &buffer) override;
 private:
@@ -79,6 +81,8 @@ class EffectRack : public Slider::Listener,
 
 		AdsrParams getAdsrParams();
 		void setAdsrParams(AdsrParams params);
+		void setSingleAdsrParam(AdsrParam param, float val);
+		void setSingeReverbParam(ReverbParam param, float val);
         
     private:
 		void applyVolToBuffer(AudioBuffer<float>& buffer);
@@ -94,14 +98,19 @@ class EffectRack : public Slider::Listener,
 	   std::vector<rmpEffect>::iterator ptr;
 };
 
+//=====================================================================
+
 class LayerEffectRack
 {
 public:
-	LayerEffectRack();
+	LayerEffectRack(/*const double sampleRate*/);
 	~LayerEffectRack();
 
 	void applyEffects(AudioBuffer<float> &buffer, int startSample, int numSamples);
+private:
+	EffectRack *effectRack ;
 };
+
 
 
 

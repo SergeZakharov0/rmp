@@ -164,10 +164,10 @@ void LayeredSamplesSound::clear() {
 
 void rmpSynth::renderVoices (AudioBuffer<float>& buffer, int startSample, int numSamples) 
 {
-    for (auto* voice : voices)
-        voice->renderNextBlock (buffer, startSample, numSamples);
-    
-    rack.applyEffects (buffer, startSample, numSamples);
+	for (auto* voice : voices)
+	{
+		voice->renderNextBlock(buffer, startSample, numSamples);
+	}   
 }
 
 

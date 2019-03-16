@@ -429,4 +429,130 @@ void rmpAdsrPanel::mouseDrag(const MouseEvent &event)
 }
 
 
+rmpFunctionsPanel::rmpFunctionsPanel( )
+{
+	lName.setText("Effects", dontSendNotification);
+	lName.attachToComponent(this, false);
+	
+	for (int i = 0; i < 4; ++i)
+	{
+		addAndMakeVisible(f[i]);
+		f[i].addMouseListener(this, true);
+		
+		f[i].setImage(imgKnob);
+		f[i].setBounds(i * 50, 30, 50, 39);
+		lf[i].setText(juce::String("Effect ") + juce::String(i + 1), dontSendNotification);
+		lf[i].attachToComponent(f + i, false);
+	}
+}
+
+rmpFunctionsPanel::~rmpFunctionsPanel()
+{
+
+}
+
+void rmpFunctionsPanel::setEffects(rmpAdsrPanel *_adsr, rmpReverbPanel *_reverb)
+{
+	reverb = _reverb;
+	adsr = _adsr;
+}
+
+void rmpFunctionsPanel::mouseDrag(const MouseEvent &event)
+{
+
+	if (event.eventComponent == f) //Depth + Release
+	{
+		float angle = -(float)event.getDistanceFromDragStartY() / 20;
+
+		if (angle > angle_val)
+		{
+			angle = angle_val;
+		}
+		else if (angle < -angle_val)
+		{
+			angle = -angle_val;
+		}
+
+		AffineTransform transform;
+		f[0].setTransform(transform.rotated(angle, 50.0f / 2.0f, 30.0f + 39.0f / 2.0f));
+		float depth_val = calcParam(angle);
+		float release_val = 1 - calcParam(angle);
+		
+		effectRack->setSingleAdsrParam(epRelease, release_val);
+		effectRack->setSingeReverbParam(epDepth, depth_val);
+	} 
+	else if (event.eventComponent == f + 1) //width + attack
+	{
+		float angle = -(float)event.getDistanceFromDragStartY() / 20;
+
+		if (angle > angle_val)
+		{
+			angle = angle_val;
+		}
+		else if (angle < -angle_val)
+		{
+			angle = -angle_val;
+		}
+
+		AffineTransform transform;
+		f[1].setTransform(transform.rotated(angle, 50 + 50.0f / 2.0f, 30.0f + 39.0f / 2.0f));
+
+		float width_val = calcParam(angle);
+		float attack_val = calcParam(angle);
+
+		effectRack->setSingleAdsrParam(epAttack, attack_val);
+		effectRack->setSingeReverbParam(epWidth, width_val);
+	}
+	else if (event.eventComponent == f + 2) //sustain + wet
+	{
+		float angle = -(float)event.getDistanceFromDragStartY() / 20;
+
+		if (angle > angle_val)
+		{
+			angle = angle_val;
+		}
+		else if (angle < -angle_val)
+		{
+			angle = -angle_val;
+		}
+
+		AffineTransform transform;
+		f[2].setTransform(transform.rotated(angle, 100 + 50.0f / 2.0f, 30.0f + 39.0f / 2.0f));
+
+		float sustain_val = calcParam(angle);
+		float drywet_val = 1 - calcParam(angle);
+
+		effectRack->setSingleAdsrParam(epSustain, sustain_val);
+		effectRack->setSingeReverbParam(epDryWet, drywet_val);
+	}
+	else if (event.eventComponent == f + 3) // decay + width
+	{
+		float angle = -(float)event.getDistanceFromDragStartY() / 20;
+
+		if (angle > angle_val)
+		{
+			angle = angle_val;
+		}
+		else if (angle < -angle_val)
+		{
+			angle = -angle_val;
+		}
+
+		AffineTransform transform;
+		f[3].setTransform(transform.rotated(angle, 150 + 50.0f / 2.0f, 30.0f + 39.0f / 2.0f));
+
+		float width_val = calcParam(angle);
+		float decay_val = calcParam(angle);
+
+		effectRack->setSingleAdsrParam(epDecay, decay_val);
+		effectRack->setSingeReverbParam(epWidth, width_val);
+	}
+	
+
+	adsr->init();
+	reverb->init();
+
+}
+
+
 

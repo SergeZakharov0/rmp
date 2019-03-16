@@ -45,6 +45,7 @@ private:
 
 	rmpReverbPanel ReverbPanel;
 	rmpAdsrPanel AdsrPanel;
+	rmpFunctionsPanel funcPanel;
 
 	
 

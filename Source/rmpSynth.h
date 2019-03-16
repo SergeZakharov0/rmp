@@ -15,11 +15,7 @@
 #include "EffectRack.h"
 #include <algorithm>
 #include "SQLInputSource.h"
-/*
-class EffectRack {
-    public:
-    virtual void applyEffects(AudioBuffer<float>& buffer, int startSample, int numSamples) {};
-};*/
+
 
 class VelocityBasedSound : public SynthesiserSound 
 {
@@ -41,7 +37,7 @@ class rmpSynth : public VelocityBasedSynthesiser
     public:
         void renderVoices (AudioBuffer<float>& buffer, int startSample, int numSamples) override;
     protected:
-        LayerEffectRack rack;
+        LayerEffectRack rack[100];
 };
 
 class LayeredSamplesSound : public VelocityBasedSound 
@@ -104,7 +100,7 @@ class LayeredSamplesVoice : public SynthesiserVoice
     int currentMidiNoteNumber = 0;
     float currentVelocity = 0;
     int currentSamplePosition = 0;
-    LayerEffectRack rack;
+	LayerEffectRack rack;// = LayerEffectRack(48000);
 
     private:
     template <typename floatType>

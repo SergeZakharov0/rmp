@@ -81,6 +81,27 @@ void rmpReverb::applyEffect(AudioBuffer<float> &buffer)
 	reverb.processStereo(l_channel, r_channel, numSamples);
 }
 
+void rmpReverb::setSingleParam(ReverbParam param, float val)
+{
+	switch (param)
+	{
+	    case epDryWet:
+			params.dryWet = val;
+			break;
+
+		case epDepth:
+			params.depth = val;
+			break;
+
+		case epWidth:
+			params.width = val;
+			break;
+
+		default:
+			break;
+	}
+}
+
 //=============================================================================
 
 rmpADSR::rmpADSR()
@@ -136,7 +157,32 @@ void rmpADSR::setParams(AdsrParams parameters)
 
 }
 
+void rmpADSR::setSingleParam(AdsrParam param, float val)
+{
+	switch (param)
+	{
+	    case epAttack:
+			params.attack = val;
+			break;
 
+		case epDecay:
+			params.decay = val;
+			break;
+
+		case epSustain:
+			params.sustain = val;
+			break;
+			
+		case epRelease:
+			params.release = val;
+			break;
+
+		default:
+			break;
+	}
+}
+
+//=======================================================================
 EffectRack::EffectRack(const double sampleRate)
 {
 	reverb = new rmpReverb(sampleRate);
@@ -263,19 +309,31 @@ void EffectRack::setAdsrParams(AdsrParams params)
 	adsr->setParams(params);
 }
 
-
-LayerEffectRack::LayerEffectRack()
+void EffectRack::setSingleAdsrParam(AdsrParam param, float val)
 {
+	adsr->setSingleParam(param, val);
+}
 
+
+void EffectRack::setSingeReverbParam(ReverbParam param, float val)
+{
+	reverb->setSingleParam(param, val);
+}
+//===============================================================================
+
+LayerEffectRack::LayerEffectRack(/*const double sampleRate */)
+{
+	effectRack = new EffectRack(48000);
 }
 
 LayerEffectRack::~LayerEffectRack()
 {
-
+	delete effectRack;
 }
 
 void LayerEffectRack::applyEffects(AudioBuffer<float> &buffer, int startSample, int numSamples)
 {
-
+	effectRack->applyEffects(buffer);
 }
+
 

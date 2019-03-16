@@ -36,3 +36,18 @@ typedef struct {
 	float sustain;
 	float release;
 }AdsrParams;
+
+typedef enum
+{
+	epAttack,
+	epDecay,
+	epSustain,
+	epRelease
+}AdsrParam;
+
+typedef enum
+{
+	epDryWet,
+	epDepth,
+	epWidth
+}ReverbParam;

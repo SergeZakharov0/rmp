@@ -98,3 +98,19 @@ private:
 	AdsrParams params;
 	
 };
+
+class rmpFunctionsPanel : public BaseControlPanel,
+	public MouseListener
+{
+public:
+	rmpFunctionsPanel();
+	~rmpFunctionsPanel();
+	void setEffects(rmpAdsrPanel *_adsr, rmpReverbPanel *_reverb);
+	void mouseDrag(const MouseEvent &event) override;
+
+private:
+	rmpAdsrPanel *adsr;
+	rmpReverbPanel *reverb;
+	ImageComponent f[4];
+	Label lf[4];
+};
