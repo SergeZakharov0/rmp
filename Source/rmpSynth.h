@@ -37,7 +37,7 @@ class rmpSynth : public VelocityBasedSynthesiser
     public:
         void renderVoices (AudioBuffer<float>& buffer, int startSample, int numSamples) override;
     protected:
-        LayerEffectRack rack[100];
+        //LayerEffectRack rack;
 };
 
 class LayeredSamplesSound : public VelocityBasedSound 
@@ -58,7 +58,10 @@ class LayeredSamplesSound : public VelocityBasedSound
     int getDataLength(int midiNoteNumber, float velocity) {
         return fullDataLength[midiNoteNumber][int(velocity*128)]; };
 
+	void applyLayerEffect(AudioBuffer<float> &buffer);
+	LayerEffectRack effectRack;
     protected:
+	
 	void clear();
 	std::shared_ptr< AudioBuffer<float> > fullData[128][128];
     unsigned int fullDataLength[128][128];
@@ -95,12 +98,13 @@ class LayeredSamplesVoice : public SynthesiserVoice
     void pitchWheelMoved (int newValue) override;
     void controllerMoved (int controllerNumber, int newValue) override;
     void renderNextBlock (AudioBuffer<float> &outputBuffer, int startSample, int numSamples) override;
-
+	
+	LayerEffectRack rack;
     protected:
     int currentMidiNoteNumber = 0;
     float currentVelocity = 0;
     int currentSamplePosition = 0;
-	LayerEffectRack rack;// = LayerEffectRack(48000);
+	
 
     private:
     template <typename floatType>

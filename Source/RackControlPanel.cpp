@@ -21,7 +21,7 @@ BaseControlPanel::BaseControlPanel()
 	imgEffectOn = ImageFileFormat::loadFrom(File::getCurrentWorkingDirectory().getChildFile("OnButton.png"));
 	imgEffectOff = ImageFileFormat::loadFrom(File::getCurrentWorkingDirectory().getChildFile("OffButton.png"));
 
-	setSize(200, 150);
+	setSize(300, 300);
 }
 
 BaseControlPanel::~BaseControlPanel()
@@ -72,6 +72,8 @@ rmpReverbPanel::rmpReverbPanel()
 	icOnOff.setBounds( getWidth() - imgEffectOn.getWidth(), 0, icOnOff.getWidth(), icOnOff.getHeight());
 
 	lName.setText("Reverb", dontSendNotification);
+
+	lName.attachToComponent(&icOnOff, true);
 
 	icDepth.setImage(imgKnob);
 	icWidth.setImage(imgKnob);
@@ -554,5 +556,102 @@ void rmpFunctionsPanel::mouseDrag(const MouseEvent &event)
 
 }
 
+LayerReverbPanel::LayerReverbPanel()
+{
+	lName.setText("Reverb", dontSendNotification);
+	effectIsOn = true;
+	if (effectIsOn)
+	{
+		icOnOff.setImage(imgEffectOn);
+	}
+	else
+	{
+		icOnOff.setImage(imgEffectOff);
+	}
+
+	addAndMakeVisible(icOnOff);
+
+	addAndMakeVisible(slDryWet);
+	addAndMakeVisible(slDepth);
+	addAndMakeVisible(slWidth);
+
+	slDryWet.setBounds(50, 30, 200, 30);
+	slDepth.setBounds(50, 60, 200, 30);
+	slWidth.setBounds(50, 90, 200, 30);
+	
+	slDryWet.setRange(Range<double>(0, 1), 0.01);
+	slDepth.setRange(Range<double>(0, 1), 0.01);
+	slWidth.setRange(Range<double>(0, 1), 0.01);
 
 
+	lDryWet.setText("Dry/Wet", dontSendNotification);
+	lDepth.setText("Depth", dontSendNotification);
+	lWidth.setText("Width", dontSendNotification);
+
+	lDryWet.attachToComponent(&slDryWet, true);
+	lDepth.attachToComponent(&slDepth, true);
+	lWidth.attachToComponent(&slWidth, true);
+
+	icOnOff.setBounds(getWidth() - 39, 0, 39, 39);
+	lName.attachToComponent(&icOnOff, true);
+}
+
+LayerAdsrPanel::LayerAdsrPanel()
+{
+
+	lName.setText("Adsr", dontSendNotification);
+
+	effectIsOn = true;
+	if (effectIsOn)
+	{
+		icOnOff.setImage(imgEffectOn);
+	}
+	else
+	{
+		icOnOff.setImage(imgEffectOff);
+	}
+
+	addAndMakeVisible(icOnOff);
+
+	icOnOff.setBounds(getWidth() - 39, 0, 39, 39);
+	lName.attachToComponent(&icOnOff, true);
+
+	lAttack.setText("Attack", dontSendNotification);
+	lDecay.setText("Decay", dontSendNotification);
+	lSustain.setText("Sustain", dontSendNotification);
+	lRelease.setText("Release", dontSendNotification);
+
+	lAttack.attachToComponent(&slAttack, true);
+	lDecay.attachToComponent(&slDecay, true);
+	lSustain.attachToComponent(&slSustain, true);
+	lRelease.attachToComponent(&slRelease, true);
+
+	addAndMakeVisible(slAttack);
+	addAndMakeVisible(slDecay);
+	addAndMakeVisible(slSustain);
+	addAndMakeVisible(slRelease);
+
+	slAttack.setRange(Range<double>(0, 1), 0.01);
+	slDecay.setRange(Range<double>(0, 1), 0.01);
+	slSustain.setRange(Range<double>(0, 1), 0.01);
+	slRelease.setRange(Range<double>(0, 1), 0.01);
+
+	slAttack.setBounds(50, 30, 200, 30);
+	slDecay.setBounds(50, 60, 200, 30);
+	slSustain.setBounds(50, 90, 200, 30);
+	slRelease.setBounds(50, 120, 200, 30);
+
+}
+
+
+LayerEffectRackPanel::LayerEffectRackPanel()
+{
+	name.setText("Layer Effect Rack", dontSendNotification);
+	name.attachToComponent(this, false);
+	setSize(120, 300);
+	addAndMakeVisible( lapAdsr );
+	addAndMakeVisible( lrpReverb );
+
+	lapAdsr.setBounds(0, 0, 300, 150);
+	lrpReverb.setBounds(0, 170, 300, 150);
+}

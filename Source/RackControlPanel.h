@@ -114,3 +114,63 @@ private:
 	ImageComponent f[4];
 	Label lf[4];
 };
+
+
+
+class LayerAdsrPanel : public BaseControlPanel
+{
+public:
+	LayerAdsrPanel();
+	//ADSR
+	
+
+private:
+	Slider slAttack;
+	Slider slDecay;
+	Slider slSustain;
+	Slider slRelease;
+
+	Label lAttack;
+	Label lDecay;
+	Label lSustain;
+	Label lRelease;
+
+	bool effectIsOn;
+	ImageComponent icOnOff;
+
+};
+
+class LayerReverbPanel : public BaseControlPanel
+{
+public:
+	
+	LayerReverbPanel();
+	//Reverb
+	
+
+private:
+	Slider slDryWet;
+	Slider slWidth;
+	Slider slDepth;
+
+	Label lDryWet;
+	Label lWidth;
+	Label lDepth;
+
+	bool effectIsOn;
+	ImageComponent icOnOff;
+};
+
+
+class LayerEffectRackPanel : public Component
+{
+public:
+	LayerEffectRackPanel();
+	
+	LayerAdsrPanel lapAdsr;
+	LayerReverbPanel lrpReverb;
+private:
+	Label name;
+	
+
+};

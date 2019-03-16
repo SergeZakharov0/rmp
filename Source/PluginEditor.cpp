@@ -34,19 +34,20 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
     masterVolLabel.setText("Volume", dontSendNotification);
     masterVolLabel.attachToComponent(&masterVolSlider, true);
     
+	addAndMakeVisible(layerPanel);
 	addAndMakeVisible( ReverbPanel );
 	addAndMakeVisible(AdsrPanel);
 	addAndMakeVisible(funcPanel);
 
 	auto sliderLeft = 120;
 
-	panSlider.setBounds(sliderLeft, 20, 200, 20);
-	masterVolSlider.setBounds(sliderLeft, 50, 200, 20);
+	panSlider.setBounds(getWidth() - 250, 20, 200, 20);
+	masterVolSlider.setBounds(getWidth() - 250, 50, 200, 20);
 
-
-	AdsrPanel.setBounds(120, 100, 400, 150);
-	ReverbPanel.setBounds(120, 300, 400, 150);
-	funcPanel.setBounds(550, 300, 400, 150);
+	layerPanel.setBounds(50 , 100, 300, 700);
+	AdsrPanel.setBounds(getWidth() - 300, 100, 400, 150);
+	ReverbPanel.setBounds(getWidth() - 300, 300, 400, 150);
+	funcPanel.setBounds(450, 300, 400, 150);
 
 	ReverbPanel.addRack( processor.getListener() );
 	AdsrPanel.addRack(processor.getListener());
@@ -75,7 +76,7 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
 
 	listModel = std::make_shared<myListBoxModel>(main, &processor, &listBox);
 	listBox.setModel(listModel.get());
-	listBox.setBounds(Rectangle<int>(500, 20, 400, 200));
+	listBox.setBounds(Rectangle<int>(400, 20, 400, 200));
 	listBox.getHeader().addColumn(String("one"), 1, 100);
 	listBox.getHeader().addColumn(String("two"), 2, 100);
 	listBox.getHeader().addColumn(String("three"), 3, 100);

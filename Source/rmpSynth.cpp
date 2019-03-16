@@ -37,6 +37,7 @@ void VelocityBasedSynthesiser::noteOn (const int midiChannel,
 }
 
 LayeredSamplesSound::LayeredSamplesSound() {
+ 
 	this->clear();
     }
     
@@ -162,11 +163,23 @@ void LayeredSamplesSound::clear() {
 			}
 }
 
+void LayeredSamplesSound::applyLayerEffect(AudioBuffer<float> &buffer)
+{
+	effectRack.applyEffects(buffer);
+}
+
 void rmpSynth::renderVoices (AudioBuffer<float>& buffer, int startSample, int numSamples) 
 {
+	
 	for (auto* voice : voices)
 	{
 		voice->renderNextBlock(buffer, startSample, numSamples);
+
+		 //LayeredSamplesSound *sound = static_cast<LayeredSamplesSound*>( static_cast<SynthesiserSound *>(voice->getCurrentlyPlayingSound().get() ) );
+		//if(&sound)
+		//sound->applyLayerEffect(buffer);
+
+
 	}   
 }
 
@@ -210,23 +223,26 @@ void LayeredSamplesVoice::_renderNextBlock (AudioBuffer<floatType>& outputBuffer
         int datasize = playingSound->getDataLength(currentMidiNoteNumber, currentVelocity);
         numSamples = ((numSamples + currentSamplePosition) > datasize) ? datasize - currentSamplePosition : numSamples;
 
-        if (numSamples)
-            if (data.getNumChannels() > 1 && outputBuffer.getNumChannels() > 1) 
-            {
-                outputBuffer.copyFrom(0, startSample, data, 0, currentSamplePosition, numSamples);
-                outputBuffer.copyFrom(1, startSample, data, 1, currentSamplePosition, numSamples);
-            }
-            else if (data.getNumChannels() == 1)
-            {
-                outputBuffer.copyFrom(0, startSample, data, 0, currentSamplePosition, numSamples);
-                outputBuffer.copyFrom(1, startSample, data, 0, currentSamplePosition, numSamples);
-            }
-            else if (outputBuffer.getNumChannels() == 1)
-            {
-                outputBuffer.copyFrom(0, startSample, data, 0, currentSamplePosition, numSamples);
-                outputBuffer.applyGain(0, startSample, numSamples, 0.5);
-                outputBuffer.addFrom(0, startSample, data, 1, currentSamplePosition, numSamples, 0.5);            
-            }
+		if (numSamples)
+		{
+			if (data.getNumChannels() > 1 && outputBuffer.getNumChannels() > 1)
+			{
+				outputBuffer.copyFrom(0, startSample, data, 0, currentSamplePosition, numSamples);
+				outputBuffer.copyFrom(1, startSample, data, 1, currentSamplePosition, numSamples);
+			}
+			else if (data.getNumChannels() == 1)
+			{
+				outputBuffer.copyFrom(0, startSample, data, 0, currentSamplePosition, numSamples);
+				outputBuffer.copyFrom(1, startSample, data, 0, currentSamplePosition, numSamples);
+			}
+			else if (outputBuffer.getNumChannels() == 1)
+			{
+				outputBuffer.copyFrom(0, startSample, data, 0, currentSamplePosition, numSamples);
+				outputBuffer.applyGain(0, startSample, numSamples, 0.5);
+				outputBuffer.addFrom(0, startSample, data, 1, currentSamplePosition, numSamples, 0.5);
+			}
+			
+		}
         currentSamplePosition += numSamples;
     }
 }
@@ -235,5 +251,6 @@ void LayeredSamplesVoice::pitchWheelMoved (int /*newValue*/) {}
 void LayeredSamplesVoice::controllerMoved (int /*controllerNumber*/, int /*newValue*/) {}
 
 void LayeredSamplesVoice::renderNextBlock (AudioBuffer<float>& outputBuffer, int startSample, int numSamples) {
+
     _renderNextBlock<float>(outputBuffer, startSample, numSamples);
 }

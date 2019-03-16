@@ -43,6 +43,7 @@ private:
     Label masterVolLabel;
     Label panLabel;
 
+	LayerEffectRackPanel layerPanel;
 	rmpReverbPanel ReverbPanel;
 	rmpAdsrPanel AdsrPanel;
 	rmpFunctionsPanel funcPanel;

@@ -106,7 +106,7 @@ public:
 	LayerEffectRack(/*const double sampleRate*/);
 	~LayerEffectRack();
 
-	void applyEffects(AudioBuffer<float> &buffer, int startSample, int numSamples);
+	void applyEffects(AudioBuffer<float> &buffer);
 private:
 	EffectRack *effectRack ;
 };

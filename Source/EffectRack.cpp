@@ -75,10 +75,25 @@ ReverbParams rmpReverb::getParams()
 void rmpReverb::applyEffect(AudioBuffer<float> &buffer)
 {
 	float *l_channel = buffer.getWritePointer(0);
-	float *r_channel = buffer.getWritePointer(1);
+	float *r_channel;// = buffer.getWritePointer(1);
+
+	int numChannels = buffer.getNumChannels();
+	if (numChannels > 1)
+	{
+		r_channel = buffer.getWritePointer(1);
+	}
 	int numSamples = buffer.getNumSamples();
 
-	reverb.processStereo(l_channel, r_channel, numSamples);
+
+	if (numChannels == 1)
+	{
+		reverb.processMono(l_channel, numSamples);
+	}
+	else if (numChannels == 2)
+	{
+		reverb.processStereo(l_channel, r_channel, numSamples);
+	}
+	
 }
 
 void rmpReverb::setSingleParam(ReverbParam param, float val)
@@ -331,7 +346,7 @@ LayerEffectRack::~LayerEffectRack()
 	delete effectRack;
 }
 
-void LayerEffectRack::applyEffects(AudioBuffer<float> &buffer, int startSample, int numSamples)
+void LayerEffectRack::applyEffects( AudioBuffer<float> &buffer )
 {
 	effectRack->applyEffects(buffer);
 }
