@@ -25,6 +25,7 @@ NewProjectAudioProcessorEditor::NewProjectAudioProcessorEditor (NewProjectAudioP
     addAndMakeVisible(panSlider);
     panLabel.setText("Pan", dontSendNotification);
     panLabel.attachToComponent(&panSlider, true);
+	
     
     masterVolSlider.setName("volume");
    masterVolSlider.addListener( processor.getListener() );

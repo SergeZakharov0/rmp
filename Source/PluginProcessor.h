@@ -19,7 +19,8 @@
 //==============================================================================
 /**
 */
-class NewProjectAudioProcessor  : public AudioProcessor
+class NewProjectAudioProcessor  : public AudioProcessor,
+	public MidiKeyboardStateListener
 {
 public:
     //==============================================================================
@@ -59,6 +60,9 @@ public:
     //==============================================================================
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+
+	void handleNoteOn(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity) override;
+	void handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity) override;
 
     //==============================================================================
     MidiKeyboardState& getKBState();

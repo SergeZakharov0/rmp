@@ -163,9 +163,9 @@ void LayeredSamplesSound::clear() {
 			}
 }
 
-void LayeredSamplesSound::applyLayerEffect(AudioBuffer<float> &buffer)
+void LayeredSamplesSound::applyLayerEffect(AudioBuffer<float> &buffer, int startSample, int numSamples)
 {
-	effectRack.applyEffects(buffer);
+	effectRack.applyEffects(buffer, startSample, numSamples);
 }
 
 void rmpSynth::renderVoices (AudioBuffer<float>& buffer, int startSample, int numSamples) 
@@ -175,12 +175,12 @@ void rmpSynth::renderVoices (AudioBuffer<float>& buffer, int startSample, int nu
 	{
 		voice->renderNextBlock(buffer, startSample, numSamples);
 
-		 //LayeredSamplesSound *sound = static_cast<LayeredSamplesSound*>( static_cast<SynthesiserSound *>(voice->getCurrentlyPlayingSound().get() ) );
-		//if(&sound)
-		//sound->applyLayerEffect(buffer);
+		 LayeredSamplesSound *sound = static_cast<LayeredSamplesSound*>( static_cast<SynthesiserSound *>(voice->getCurrentlyPlayingSound().get() ) );
+		//if(sound)
+		//sound->applyLayerEffect(buffer, startSample, numSamples);
 
 
-	}   
+	} 
 }
 
 

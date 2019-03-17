@@ -24,6 +24,7 @@ NewProjectAudioProcessor::NewProjectAudioProcessor()
                        )
 #endif
 {
+	keyboardState.addListener(this);
 	numSamples = 0;
 	volume = 127;
 	pan = 0;
@@ -211,6 +212,16 @@ void NewProjectAudioProcessor::setStateInformation (const void* data, int sizeIn
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+}
+
+void NewProjectAudioProcessor::handleNoteOn(MidiKeyboardState * source, int midiChannel, int midiNoteNumber, float velocity)
+{
+	rack->noteOn();
+}
+
+void NewProjectAudioProcessor::handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity)
+{
+	rack->noteOff();
 }
 
 //==============================================================================

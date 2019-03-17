@@ -96,6 +96,29 @@ void rmpReverb::applyEffect(AudioBuffer<float> &buffer)
 	
 }
 
+void rmpReverb::applyEffect(AudioBuffer<float> &buffer, int startSample, int numSamples)
+{
+	float *l_channel = buffer.getWritePointer(0, startSample);
+	float *r_channel;// = buffer.getWritePointer(1);
+
+	int numChannels = buffer.getNumChannels();
+	if (numChannels > 1)
+	{
+		r_channel = buffer.getWritePointer(1, startSample);
+	}
+
+
+	if (numChannels == 1)
+	{
+		reverb.processMono(l_channel, numSamples);
+	}
+	else if (numChannels == 2)
+	{
+		reverb.processStereo(l_channel, r_channel, numSamples);
+	}
+
+}
+
 void rmpReverb::setSingleParam(ReverbParam param, float val)
 {
 	switch (param)
@@ -141,11 +164,38 @@ rmpADSR::~rmpADSR()
 
 void rmpADSR::applyEffect(AudioBuffer<float> &buffer)
 {
-	if (endSample == 0)
+	
+	int	numSamples = buffer.getNumSamples();
+	int numChannels = buffer.getNumChannels();
+
+
+	float *l = buffer.getWritePointer(0);
+	float *r;
+	if (numChannels > 1)
 	{
-		endSample = buffer.getNumSamples();
+		r = buffer.getWritePointer(1);
 	}
-	adsr.applyEnvelopeToBuffer(buffer, startSample, endSample);
+
+	for (int i = 0; i < numSamples; ++i)
+	{
+		float envelope = adsr.getNextSample();
+		l[i] *= envelope;
+
+		if (numChannels > 1)
+		{
+			r[i] *= envelope;
+		}
+	}
+}
+
+void rmpADSR::noteOn()
+{
+	adsr.noteOn();
+}
+
+void rmpADSR::noteOff()
+{
+	adsr.noteOff();
 }
 
 AdsrParams rmpADSR::getParams()
@@ -239,6 +289,7 @@ void EffectRack::applyEffects(AudioBuffer<float> &buffer)
 		switch (effect)
 		{
 		case rmpEffects::adsr:
+			
 			adsr->applyEffect(buffer);
 			break;
 
@@ -334,21 +385,29 @@ void EffectRack::setSingeReverbParam(ReverbParam param, float val)
 {
 	reverb->setSingleParam(param, val);
 }
+void EffectRack::noteOn()
+{
+	adsr->noteOn();
+}
+void EffectRack::noteOff()
+{
+	adsr->noteOff();
+}
 //===============================================================================
 
 LayerEffectRack::LayerEffectRack(/*const double sampleRate */)
 {
-	effectRack = new EffectRack(48000);
+
 }
 
 LayerEffectRack::~LayerEffectRack()
 {
-	delete effectRack;
+
 }
 
-void LayerEffectRack::applyEffects( AudioBuffer<float> &buffer )
+void LayerEffectRack::applyEffects( AudioBuffer<float> &buffer, int startSample, int numSamples )
 {
-	effectRack->applyEffects(buffer);
+	reverb.applyEffect(buffer, startSample, numSamples);
 }
 
 

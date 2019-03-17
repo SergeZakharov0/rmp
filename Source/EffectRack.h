@@ -25,13 +25,14 @@ class rmpEffect
 class rmpReverb : public rmpEffect
 {
     public:
-	    rmpReverb(const double sampleRate);
+	    rmpReverb(const double sampleRate = 48000.0f);
 	    ~rmpReverb();
 
 		void setParams();
 		void setParams( ReverbParams parameters);
 		ReverbParams getParams();
 	    void applyEffect(AudioBuffer<float> &buffer) override;
+		void applyEffect(AudioBuffer<float> &buffer, int startSample, int numSamples);
 		void setSingleParam(ReverbParam param, float val);
 private:
 	void setSampleRate(const double sampleRate);
@@ -52,6 +53,10 @@ class rmpADSR : public rmpEffect
 		void setSingleParam(AdsrParam param, float val);
 
 	    void applyEffect(AudioBuffer<float> &buffer) override;
+
+		void noteOn();
+		void noteOff();
+
 private:
 	AdsrParams params;
 	ADSR adsr;
@@ -83,12 +88,16 @@ class EffectRack : public Slider::Listener,
 		void setAdsrParams(AdsrParams params);
 		void setSingleAdsrParam(AdsrParam param, float val);
 		void setSingeReverbParam(ReverbParam param, float val);
+
+		void noteOn();
+		void noteOff();
         
     private:
 		void applyVolToBuffer(AudioBuffer<float>& buffer);
 		void volValChanged(float val);
 		void panValChanged(float val);
 		
+		float envelope;
 		float volume;
 		float pan;
 		rmpReverb *reverb;
@@ -106,9 +115,9 @@ public:
 	LayerEffectRack(/*const double sampleRate*/);
 	~LayerEffectRack();
 
-	void applyEffects(AudioBuffer<float> &buffer);
+	void applyEffects(AudioBuffer<float> &buffer, int startSample, int numSamples);
 private:
-	EffectRack *effectRack ;
+	rmpReverb reverb;
 };
 
 

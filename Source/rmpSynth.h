@@ -37,7 +37,7 @@ class rmpSynth : public VelocityBasedSynthesiser
     public:
         void renderVoices (AudioBuffer<float>& buffer, int startSample, int numSamples) override;
     protected:
-        //LayerEffectRack rack;
+        LayerEffectRack rack;
 };
 
 class LayeredSamplesSound : public VelocityBasedSound 
@@ -58,7 +58,7 @@ class LayeredSamplesSound : public VelocityBasedSound
     int getDataLength(int midiNoteNumber, float velocity) {
         return fullDataLength[midiNoteNumber][int(velocity*128)]; };
 
-	void applyLayerEffect(AudioBuffer<float> &buffer);
+	void applyLayerEffect(AudioBuffer<float> &buffer, int startSample, int numSamples );
 	LayerEffectRack effectRack;
     protected:
 	
