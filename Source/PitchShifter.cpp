@@ -13,8 +13,6 @@ PitchShifter::~PitchShifter()
 
 }
 
-
-//=======================================================================================
 void PitchShifter::stretch(const float *in_buff_ptr, float *result, float r_factor)
 {
 	//hanning_window

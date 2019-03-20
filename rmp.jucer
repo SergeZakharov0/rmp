@@ -4,27 +4,53 @@
               pluginFormats="buildStandalone,buildVST,buildVST3" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
               pluginVST3Category="Instrument,Sampler">
   <MAINGROUP id="LC6Y1T" name="rmp">
+    <GROUP id="{C735F908-F355-F96A-D27B-A385D1649572}" name="Images">
+      <FILE id="lLgcyq" name="background.png" compile="0" resource="1" file="Images/background.png"/>
+      <FILE id="xsVtE0" name="folder_active.png" compile="0" resource="1"
+            file="Images/folder_active.png"/>
+      <FILE id="GsFdMw" name="folder_inactive.png" compile="0" resource="1"
+            file="Images/folder_inactive.png"/>
+      <FILE id="H3AfEc" name="grid.png" compile="0" resource="1" file="Images/grid.png"/>
+      <FILE id="QOrz0a" name="hyperia.png" compile="0" resource="1" file="Images/hyperia.png"/>
+      <FILE id="hTMzCB" name="instrument.png" compile="0" resource="1" file="Images/instrument.png"/>
+      <FILE id="ZfAOaU" name="knob.png" compile="0" resource="1" file="Images/knob.png"/>
+      <FILE id="kREKPR" name="libraryback_greyfull.png" compile="0" resource="1"
+            file="Images/libraryback_greyfull.png"/>
+      <FILE id="rcvxiu" name="libraryback_pack.png" compile="0" resource="1"
+            file="Images/libraryback_pack.png"/>
+      <FILE id="XiWhs2" name="librarybackground.png" compile="0" resource="1"
+            file="Images/librarybackground.png"/>
+      <FILE id="iBEXc3" name="librarysliderback.png" compile="0" resource="1"
+            file="Images/librarysliderback.png"/>
+      <FILE id="vqTyqk" name="librarysliderhead.png" compile="0" resource="1"
+            file="Images/librarysliderhead.png"/>
+      <FILE id="uSThZi" name="offButton.png" compile="0" resource="1" file="Images/offButton.png"/>
+      <FILE id="AtOmoB" name="onButton.png" compile="0" resource="1" file="Images/onButton.png"/>
+    </GROUP>
     <GROUP id="{DA3FF88B-B5C4-E6FE-8EF4-E8B1E8980DA6}" name="SQLite">
       <FILE id="YSJ4Mm" name="sqlite3.c" compile="1" resource="0" file="Source/SQLite/sqlite3.c"/>
       <FILE id="qAgaNS" name="sqlite3.h" compile="0" resource="0" file="Source/SQLite/sqlite3.h"/>
     </GROUP>
     <GROUP id="{B5EA1DE6-5C6A-3053-6A75-227C1B25F6BE}" name="Source">
-      <FILE id="xQOXAG" name="EffectRackConfig.h" compile="0" resource="0"
-            file="Source/EffectRackConfig.h"/>
+      <FILE id="BWEl0p" name="LockingVoice.cpp" compile="1" resource="0"
+            file="Source/LockingVoice.cpp"/>
+      <FILE id="xN5luE" name="LockingVoice.h" compile="0" resource="0" file="Source/LockingVoice.h"/>
+      <FILE id="qN7Etv" name="LibraryMenu.cpp" compile="1" resource="0" file="Source/LibraryMenu.cpp"/>
+      <FILE id="cgWCOC" name="LibraryMenu.h" compile="0" resource="0" file="Source/LibraryMenu.h"/>
       <FILE id="ZN9tE5" name="RackControlPanel.cpp" compile="1" resource="0"
             file="Source/RackControlPanel.cpp"/>
       <FILE id="RgLTql" name="RackControlPanel.h" compile="0" resource="0"
             file="Source/RackControlPanel.h"/>
       <FILE id="VuamCz" name="EffectRack.cpp" compile="1" resource="0" file="Source/EffectRack.cpp"/>
-      <FILE id="yMlbZG" name="EffectRack.h" compile="0" resource="0" file="Source/EffectRack.h"/>
+      <FILE id="WJCKGp" name="PitchShifter.h" compile="0" resource="0" file="Source/PitchShifter.h"/>
       <FILE id="ndXwgb" name="PitchShifter.cpp" compile="1" resource="0"
             file="Source/PitchShifter.cpp"/>
-      <FILE id="WJCKGp" name="PitchShifter.h" compile="0" resource="0" file="Source/PitchShifter.h"/>
-      <FILE id="FrrfFh" name="SQLInputSource.cpp" compile="1" resource="0"
-            file="Source/SQLInputSource.cpp"/>
+      <FILE id="yMlbZG" name="EffectRack.h" compile="0" resource="0" file="Source/EffectRack.h"/>
+      <FILE id="AoqQTm" name="rmpSynth.h" compile="0" resource="0" file="Source/rmpSynth.h"/>
       <FILE id="LPG1K3" name="SQLInputSource.h" compile="0" resource="0"
             file="Source/SQLInputSource.h"/>
-      <FILE id="AoqQTm" name="rmpSynth.h" compile="0" resource="0" file="Source/rmpSynth.h"/>
+      <FILE id="FrrfFh" name="SQLInputSource.cpp" compile="1" resource="0"
+            file="Source/SQLInputSource.cpp"/>
       <FILE id="F3ToBY" name="rmpSynth.cpp" compile="1" resource="0" file="Source/rmpSynth.cpp"/>
       <FILE id="Bo20cz" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>

@@ -1,413 +1,88 @@
-/*
-  ==============================================================================
-
-    EffectRack.cpp
-    Created: 23 Feb 2019 5:44:28pm
-    Author:  CodyDog
-
-  ==============================================================================
-*/
 
 #include "EffectRack.h"
 
-//========================================================================
-rmpEffect::rmpEffect()
+void rmpReverb::applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample, int numSamples)
 {
+    if (std::get<TupleValues::currentValue>(params["turnedOn"]) == 0)
+        return;
 
-}
+    if (numSamples == -1)
+        numSamples = buffer.getNumSamples();
 
-rmpEffect::~rmpEffect()
-{
+    int numChannels = buffer.getNumChannels();
+    if (numChannels != 2 && numChannels != 1)
+        return;
 
-}
-
-void rmpEffect::applyEffect(AudioBuffer<float> &buffer)
-{
-
-}
-
-//============================================================================
-rmpReverb::rmpReverb( const double sampleRate)
-{
-	
-	params.dryWet = 0.5f;
-	params.depth = 0.5f;
-	params.width = 0.5f;
-
-	setSampleRate(sampleRate);
-	setParams(params);
-	
-}
-
-rmpReverb::~rmpReverb()
-{
-
-}
-
-void rmpReverb::setSampleRate(const double sampleRate)
-{
-	reverb.setSampleRate(sampleRate);
-}
-
-void rmpReverb::setParams()
-{
-	Reverb::Parameters rparams;
-	rparams.dryLevel = 1.0f - params.dryWet;
-	rparams.wetLevel = params.dryWet;
-	rparams.roomSize = params.depth;
-	rparams.width = params.width;
-
-	reverb.setParameters(rparams);
-}
-
-void rmpReverb::setParams( ReverbParams parameters )
-{
-	params = parameters;
-	setParams();
-	
-}
-
-ReverbParams rmpReverb::getParams()
-{
-	return params;
-}
-
-void rmpReverb::applyEffect(AudioBuffer<float> &buffer)
-{
-	float *l_channel = buffer.getWritePointer(0);
-	float *r_channel;// = buffer.getWritePointer(1);
-
-	int numChannels = buffer.getNumChannels();
-	if (numChannels > 1)
-	{
-		r_channel = buffer.getWritePointer(1);
-	}
-	int numSamples = buffer.getNumSamples();
-
+    float *l_channel = buffer.getWritePointer(0, startSample);
+    float *r_channel = (numChannels > 1) ? buffer.getWritePointer(1, startSample) : 0;
 
 	if (numChannels == 1)
-	{
 		reverb.processMono(l_channel, numSamples);
-	}
 	else if (numChannels == 2)
-	{
 		reverb.processStereo(l_channel, r_channel, numSamples);
-	}
-	
 }
 
-void rmpReverb::applyEffect(AudioBuffer<float> &buffer, int startSample, int numSamples)
+void rmpADSR::applyOn(AudioBuffer<float> &buffer, LockingVoice *caller, int startSample, int numSamples)
 {
-	float *l_channel = buffer.getWritePointer(0, startSample);
-	float *r_channel;// = buffer.getWritePointer(1);
+    if (std::get<TupleValues::currentValue>(params["turnedOn"]) == 0)
+        return;
 
-	int numChannels = buffer.getNumChannels();
-	if (numChannels > 1)
-	{
-		r_channel = buffer.getWritePointer(1, startSample);
-	}
+    if (prevBufferStatuses[caller] == true && !adsrs[caller].isActive())
+        delayedRelease(caller);
+    prevBufferStatuses[caller] = adsrs[caller].isActive();
 
-
-	if (numChannels == 1)
-	{
-		reverb.processMono(l_channel, numSamples);
-	}
-	else if (numChannels == 2)
-	{
-		reverb.processStereo(l_channel, r_channel, numSamples);
-	}
-
+    adsrs[caller].applyEnvelopeToBuffer(buffer, startSample, numSamples);
 }
 
-void rmpReverb::setSingleParam(ReverbParam param, float val)
+void rmpEffectRack::parseConfig(XmlElement *config, std::list<LockingVoice *> &voices)
 {
-	switch (param)
-	{
-	    case epDryWet:
-			params.dryWet = val;
-			break;
-
-		case epDepth:
-			params.depth = val;
-			break;
-
-		case epWidth:
-			params.width = val;
-			break;
-
-		default:
-			break;
-	}
+    forEachXmlChildElement(*config, effect_item)
+    {
+        if (effect_item->hasTagName("volume"))
+        {
+            String _name = "volume" + String(rack_list.size() + 1);
+            rmpVolume *eff = new rmpVolume(_name, 48000);
+            eff->setSingleParam("value", effect_item->getChildByName("value")->getAllSubText().getFloatValue());
+            addEffect(_name, eff);
+        }
+        if (effect_item->hasTagName("pan"))
+        {
+            String _name = "pan" + String(rack_list.size() + 1);
+            rmpPan *eff = new rmpPan(_name, 48000);
+            eff->setSingleParam("value", effect_item->getChildByName("value")->getAllSubText().getFloatValue());
+            addEffect(_name, eff);
+        }
+        if (effect_item->hasTagName("reverb"))
+        {
+            String _name = "reverb" + String(rack_list.size() + 1);
+            rmpReverb *eff = new rmpReverb(_name);
+            eff->setSingleParam("dryWet", effect_item->getChildByName("dryWet")->getAllSubText().getFloatValue());
+            eff->setSingleParam("roomSize", effect_item->getChildByName("roomSize")->getAllSubText().getFloatValue());
+            eff->setSingleParam("width", effect_item->getChildByName("width")->getAllSubText().getFloatValue());
+            addEffect(_name, eff);
+        }
+        if (effect_item->hasTagName("adsr"))
+        {
+            String _name = "adsr" + String(rack_list.size() + 1);
+            rmpADSR *eff = new rmpADSR(_name, voices);
+            eff->setSingleParam("attack", effect_item->getChildByName("attack")->getAllSubText().getFloatValue());
+            eff->setSingleParam("decay", effect_item->getChildByName("decay")->getAllSubText().getFloatValue());
+            eff->setSingleParam("sustain", effect_item->getChildByName("sustain")->getAllSubText().getFloatValue());
+            eff->setSingleParam("release", effect_item->getChildByName("release")->getAllSubText().getFloatValue());
+            addEffect(_name, eff);
+            for (std::list<LockingVoice *>::iterator it = voices.begin(); it != voices.end(); ++it)
+                (*it)->addLockingListener(eff);
+        }
+    }
 }
 
-//=============================================================================
-
-rmpADSR::rmpADSR()
+void rmpVolume::applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample, int numSamples)
 {
-	startSample = 0;
-	endSample = 0;
-
-	params.attack = 0.1f;
-	params.decay = 0.5f;
-	params.release = 0.5f;
-	params.sustain = 1.0f;
-
-	adsr.setSampleRate(48000);
-
-	setParams();
+    buffer.applyGain(startSample, numSamples, getParamValue("value"));
 }
 
-rmpADSR::~rmpADSR()
+void rmpPan::applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample, int numSamples)
 {
-
+    buffer.applyGain(0, startSample, numSamples, 1 - getParamValue("value"));
+    buffer.applyGain(1, startSample, numSamples, getParamValue("value"));
 }
-
-void rmpADSR::applyEffect(AudioBuffer<float> &buffer)
-{
-	
-	int	numSamples = buffer.getNumSamples();
-	int numChannels = buffer.getNumChannels();
-
-
-	float *l = buffer.getWritePointer(0);
-	float *r;
-	if (numChannels > 1)
-	{
-		r = buffer.getWritePointer(1);
-	}
-
-	for (int i = 0; i < numSamples; ++i)
-	{
-		float envelope = adsr.getNextSample();
-		l[i] *= envelope;
-
-		if (numChannels > 1)
-		{
-			r[i] *= envelope;
-		}
-	}
-}
-
-void rmpADSR::noteOn()
-{
-	adsr.noteOn();
-}
-
-void rmpADSR::noteOff()
-{
-	adsr.noteOff();
-}
-
-AdsrParams rmpADSR::getParams()
-{
-	return params;
-}
-
-void rmpADSR::setParams()
-{
-	ADSR::Parameters aparams;
-
-	aparams.attack = params.attack;
-	aparams.decay = params.decay;
-	aparams.release = params.release;
-	aparams.sustain = params.sustain;
-
-	adsr.setParameters(aparams);
-}
-
-void rmpADSR::setParams(AdsrParams parameters)
-{
-	params = parameters;
-	setParams();
-
-}
-
-void rmpADSR::setSingleParam(AdsrParam param, float val)
-{
-	switch (param)
-	{
-	    case epAttack:
-			params.attack = val;
-			break;
-
-		case epDecay:
-			params.decay = val;
-			break;
-
-		case epSustain:
-			params.sustain = val;
-			break;
-			
-		case epRelease:
-			params.release = val;
-			break;
-
-		default:
-			break;
-	}
-}
-
-//=======================================================================
-EffectRack::EffectRack(const double sampleRate)
-{
-	reverb = new rmpReverb(sampleRate);
-	adsr = new rmpADSR();
-	effectRack.push_back(*adsr);
-	effectRack.push_back(*reverb);
-	volume = 100;
-	pan = 0;
-	for (int i = 0; i < rmpEffects::commonEffectsVal; i++)
-	{
-		effectIsOff[i] = false;
-	}
-
-	effectIsOff[rmpEffects::adsr] = true;
-
-}
-
-EffectRack::~EffectRack()
-{
-	delete reverb;
-}
-
-void EffectRack::onOffEffect(int id)
-{
-	effectIsOff[id] = !effectIsOff[id];
-
-}
-
-void EffectRack::applyEffects(AudioBuffer<float> &buffer)
-{
-	
-	for(int effect = 0; effect < rmpEffects::commonEffectsVal; ++effect)
-	{
-		if (effectIsOff[effect])
-		{
-			continue;
-		}
-
-		switch (effect)
-		{
-		case rmpEffects::adsr:
-			
-			adsr->applyEffect(buffer);
-			break;
-
-		case rmpEffects::reverb:
-			reverb->applyEffect(buffer);
-			break;
-
-		default:
-			break;
-		}
-		
-	}
-	
-	
-	applyVolToBuffer(buffer);
-
-
-}
-
-void EffectRack::applyVolToBuffer(AudioBuffer<float>& buffer)
-{
-	auto *buff_ptr0 = buffer.getWritePointer(0); //Left channel buffer
-	auto *buff_ptr1 = buffer.getWritePointer(1); //Right channel buffer
-	int numSamples = buffer.getNumSamples();
-
-	float panVal = (pan + 100.0f) * 0.005f;
-	float volVal = volume * 0.01f;
-	float gainCh0 = volVal * (1.0f - panVal);
-	float gainCh1 = volVal * panVal;
-	for (auto sample = 0; sample < numSamples; ++sample)
-	{
-		buff_ptr0[sample] *= gainCh0;
-		buff_ptr1[sample] *= gainCh1;
-	}
-
-}
-
-void EffectRack::volValChanged(float val)
-{
-	volume = val;
-
-}
-
-void EffectRack::panValChanged(float val)
-{
-	pan = val;
-}
-
-void EffectRack::sliderValueChanged(Slider* slider)
-{
-	if (slider->getName().compare("pan") == 0)
-	{
-		panValChanged(slider->getValue());
-	}
-	else if (slider->getName().compare("volume") == 0)
-	{
-		volValChanged(slider->getValue());
-	}
-}
-
-void EffectRack::mouseDown(const MouseEvent &event)
-{
-	
-}
-
-ReverbParams EffectRack::getReverbParams()
-{
-	return reverb->getParams();
-}
-
-void EffectRack::setReverbParams(ReverbParams params)
-{
-	reverb->setParams(params);
-}
-
-AdsrParams EffectRack::getAdsrParams()
-{
-	return adsr->getParams();
-}
-
-void EffectRack::setAdsrParams(AdsrParams params)
-{
-	adsr->setParams(params);
-}
-
-void EffectRack::setSingleAdsrParam(AdsrParam param, float val)
-{
-	adsr->setSingleParam(param, val);
-}
-
-
-void EffectRack::setSingeReverbParam(ReverbParam param, float val)
-{
-	reverb->setSingleParam(param, val);
-}
-void EffectRack::noteOn()
-{
-	adsr->noteOn();
-}
-void EffectRack::noteOff()
-{
-	adsr->noteOff();
-}
-//===============================================================================
-
-LayerEffectRack::LayerEffectRack(/*const double sampleRate */)
-{
-
-}
-
-LayerEffectRack::~LayerEffectRack()
-{
-
-}
-
-void LayerEffectRack::applyEffects( AudioBuffer<float> &buffer, int startSample, int numSamples )
-{
-	reverb.applyEffect(buffer, startSample, numSamples);
-}
-
-

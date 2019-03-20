@@ -1,126 +1,254 @@
-/*
-  ==============================================================================
-
-    EffectRack.h
-    Created: 23 Feb 2019 5:44:28pm
-    Author:  CodyDog
-
-  ==============================================================================
-*/
 
 #pragma once
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "EffectRackConfig.h"
+#include <map>
+#include <unordered_set>
+#include "LockingVoice.h"
+
+enum TupleValues
+{
+    currentValue = 0,
+    minimalValue,
+    maximalValue
+};
 
 class rmpEffect
 {
+public:
+    rmpEffect(String _name) { name = _name; addParam("turnedOn", 1, 0, 1); };
+	~rmpEffect() = default;
+
+    class Listener {
     public:
-        rmpEffect();
-        ~rmpEffect();
+        virtual ~Listener() = default;
+        virtual	void EffectParamsChanged(rmpEffect *effect) = 0;
+    };
+
+    void addListener(Listener *listener) 
+    {
+        listeners.insert(listener);
+    };
+    void sentToListeners() 
+    {
+        for (Listener *listener : listeners)
+            listener->EffectParamsChanged(this);
+    }
+    void clearListeners() 
+    {
+        listeners.clear();
+    };
+
+    typedef std::tuple<float, float, float> valueTuple;
+    typedef std::map<String, valueTuple> Parameters;
     
-       virtual void applyEffect(AudioBuffer<float> &buffer);
-
-};
-
-class rmpReverb : public rmpEffect
-{
-    public:
-	    rmpReverb(const double sampleRate = 48000.0f);
-	    ~rmpReverb();
-
-		void setParams();
-		void setParams( ReverbParams parameters);
-		ReverbParams getParams();
-	    void applyEffect(AudioBuffer<float> &buffer) override;
-		void applyEffect(AudioBuffer<float> &buffer, int startSample, int numSamples);
-		void setSingleParam(ReverbParam param, float val);
-private:
-	void setSampleRate(const double sampleRate);
-	ReverbParams params;
-
-	Reverb reverb;
-};
-
-class rmpADSR : public rmpEffect
-{
-    public:
-	    rmpADSR();
-	    ~rmpADSR();
-
-		AdsrParams getParams();
-		void setParams();
-		void setParams(AdsrParams parameters);
-		void setSingleParam(AdsrParam param, float val);
-
-	    void applyEffect(AudioBuffer<float> &buffer) override;
-
-		void noteOn();
-		void noteOff();
-
-private:
-	AdsrParams params;
-	ADSR adsr;
-	int startSample;
-	int endSample;
-};
-
-
-
-class EffectRack : public Slider::Listener,
-	               public MouseListener
-{
-    public:
-        //==================================================
-        EffectRack(const double sampleRate);
-        ~EffectRack();
+    void setParams(Parameters parameters)
+    {
+        params = parameters;
+        syncParams();
+        sentToListeners();
+    };
+    void setSingleParam(String param, float val)
+    {
         
-        //==================================================
-        void applyEffects(AudioBuffer<float> &buffer);
-		void sliderValueChanged(Slider* slider) override;
-		void mouseDown(const MouseEvent &event) override;
+        std::get<TupleValues::currentValue>(params[param]) = val;
+        syncParams();
+        sentToListeners();
+    };
+    Parameters getParams()
+    {
+        return params;
+    };
+    float getParamValue(String _name)
+    {
+        return std::get<TupleValues::currentValue>(params[_name]);
+    };
+    valueTuple *getLinkToParam(String _name)
+    {
+        return &(params[_name]);
+    };
 
-        void onOffEffect(int id);
 
-		ReverbParams getReverbParams();
-		void setReverbParams(ReverbParams params);
+    virtual void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample = 0, int numSamples = -1) = 0;
+	
+	String getName() { return name; };
 
-		AdsrParams getAdsrParams();
-		void setAdsrParams(AdsrParams params);
-		void setSingleAdsrParam(AdsrParam param, float val);
-		void setSingeReverbParam(ReverbParam param, float val);
+	void turnOn() {  std::get<TupleValues::currentValue>(params["turnedOn"]) = 1; };
+	void turnOff() { std::get<TupleValues::currentValue>(params["turnedOn"]) = 0; };
 
-		void noteOn();
-		void noteOff();
-        
-    private:
-		void applyVolToBuffer(AudioBuffer<float>& buffer);
-		void volValChanged(float val);
-		void panValChanged(float val);
-		
-		float envelope;
-		float volume;
-		float pan;
-		rmpReverb *reverb;
-		rmpADSR *adsr;
-		bool effectIsOff[rmpEffects::commonEffectsVal];
-       std::vector<rmpEffect> effectRack;
-	   std::vector<rmpEffect>::iterator ptr;
+protected:
+    void addParam(String _name, float curVal, float minVal, float maxVal)
+    {
+        params.emplace(_name, valueTuple(curVal, minVal, maxVal));
+    };
+    virtual void syncParams() = 0;
+	String name;
+    Parameters params;
+    std::unordered_set<Listener *> listeners;
 };
 
-//=====================================================================
-
-class LayerEffectRack
+class rmpReverb : public rmpEffect 
 {
 public:
-	LayerEffectRack(/*const double sampleRate*/);
-	~LayerEffectRack();
+	rmpReverb(String _name, const double sampleRate = 48000.0f) : rmpEffect(_name)
+    {
+        reverb.setSampleRate(sampleRate);
+        addParam("dryWet", 0.5, 0, 1);
+        addParam("roomSize", 0.5, 0, 1);
+        addParam("width", 0.5, 0, 1);
+    };
+	~rmpReverb() = default;
+	
+	void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample = 0, int numSamples = -1) override;
 
-	void applyEffects(AudioBuffer<float> &buffer, int startSample, int numSamples);
-private:
-	rmpReverb reverb;
+protected:
+    void syncParams()
+    {
+        Reverb::Parameters rparams;
+        rparams.dryLevel = 1.0f - getParamValue("dryWet");
+        rparams.wetLevel = getParamValue("dryWet");
+        rparams.roomSize = getParamValue("roomSize");
+        rparams.width = getParamValue("width");
+        reverb.setParameters(rparams);
+    };
+
+	Reverb reverb; 
 };
 
+class rmpADSR : public rmpEffect, public LockingVoice::Listener {
+public:
+    rmpADSR(String _name, std::list<LockingVoice *> voices, const double sampleRate = 48000.0f) : rmpEffect(_name)
+    { 
+        for (std::list<LockingVoice *>::iterator it = voices.begin(); it != voices.end(); ++it) 
+        {
+            //adsrs.emplace(*it, ADSR());
+            //adsrs.emplace(*it, false);
+            adsrs[*it].setSampleRate(sampleRate);
+        }
+        
+        addParam("attack", 0.1f, 0.0f, 1.0f);
+        addParam("decay", 0.5f, 0.0f, 1.0f);
+        addParam("sustain", 0.5f, 0.0f, 1.0f);
+        addParam("release", 1.0f, 0.0f, 1.0f);
 
+    };
+	~rmpADSR() = default;
+
+    void voiceStarted(LockingVoice *voice) override
+    {
+        adsrs[voice].noteOn();
+    };
+    bool voiceAskingForRelease(LockingVoice *voice) override
+    {
+        if (adsrs[voice].isActive())
+        {
+            adsrs[voice].noteOff();
+            return false;
+        }
+        else
+            return true;
+    };
+    void delayedRelease(LockingVoice *voice)
+    {
+        voice->stopNote(0, true);
+    }
+
+	void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample = 0, int numSamples = -1) override;
+
+protected:
+    void syncParams()
+    {
+        ADSR::Parameters rparams;
+        rparams.attack = getParamValue("attack");
+        rparams.decay = getParamValue("decay");
+        rparams.sustain = getParamValue("sustain");
+        rparams.release = getParamValue("release");
+        for (std::map<LockingVoice *, ADSR>::iterator it = adsrs.begin(); it != adsrs.end(); ++it)
+            it->second.setParameters(rparams);
+    };
+    std::map<LockingVoice *, bool> prevBufferStatuses;
+    std::map<LockingVoice *, ADSR> adsrs;
+};
+
+class rmpVolume : public rmpEffect {
+public:
+    rmpVolume(String _name, const double) : rmpEffect(_name)
+    {
+        addParam("value", 1.0, 0, 1);
+    };
+    ~rmpVolume() = default;
+
+    void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample = 0, int numSamples = -1);
+
+protected:
+    void syncParams()
+    {
+    };
+};
+
+class rmpPan : public rmpEffect {
+public:
+    rmpPan(String _name, const double ) : rmpEffect(_name)
+    {
+        addParam("value", 0, -1, 1);
+    };
+    ~rmpPan() = default;
+
+    void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample, int numSamples);
+
+protected:
+    void syncParams()
+    {
+    };
+};
+
+class rmpEffectRack : public rmpEffect
+{
+public:
+    rmpEffectRack() : rmpEffect("") { };
+    ~rmpEffectRack()
+    {
+        for (std::map<String, rmpEffect *>::iterator effect = rack_list.begin(); effect != rack_list.end(); ++effect)
+            delete(effect->second);
+    };
+    void parseConfig(XmlElement *config, std::list<LockingVoice *> &voices);
+
+    void addEffect(String _name, rmpEffect *effect)
+    {
+        rack_list.emplace(_name, effect);
+    };
+    void removeEffect(String _name)
+    {
+        rack_list.erase(_name);
+    };
+    
+    void applyOn(AudioBuffer<float> &buffer, LockingVoice *caller, int startSample = 0, int numSamples = -1)
+    {
+        for (std::map<String, rmpEffect *>::iterator effect = rack_list.begin(); effect != rack_list.end(); ++effect)
+            effect->second->applyOn(buffer, caller, startSample, numSamples);
+    };
+
+    rmpEffect *findEffect(String nameSubstring)
+    {
+        for (std::map<String, rmpEffect *>::iterator effect = rack_list.begin(); effect != rack_list.end(); ++effect)
+            if (effect->first.contains(nameSubstring))
+                return effect->second;
+        return nullptr;
+    }
+
+    Parameters getEffectParams(String effectName)
+    {
+        return rack_list[effectName]->getParams();
+    };
+	void setEffectParam(String effectName, String paramName, float paramValue)
+    {
+        rack_list[effectName]->setSingleParam(paramName, paramValue);
+        sentToListeners();
+    };
+
+protected:
+    void syncParams() {};
+    std::map<String, rmpEffect *> rack_list;
+};
 
 
 

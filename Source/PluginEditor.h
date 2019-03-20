@@ -1,141 +1,43 @@
-/*
-  ==============================================================================
-
-    This file was auto-generated!
-
-    It contains the basic framework code for a JUCE plugin editor.
-
-  ==============================================================================
-*/
-
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "PluginProcessor.h"
 #include "RackControlPanel.h"
 #include <stdlib.h>
-#include "SQLInputSource.h"
+#include "LibraryMenu.h"
+#include "PluginProcessor.h"
 
-//==============================================================================
-/**
-*/
-class NewProjectAudioProcessorEditor  : public AudioProcessorEditor
+class rmpAudioProcessor;
+
+class rmpAudioProcessorEditor  : public AudioProcessorEditor, public rmpLibraryMenu::Listener
 {
 public:
-    NewProjectAudioProcessorEditor (NewProjectAudioProcessor&);
-    ~NewProjectAudioProcessorEditor();
+    rmpAudioProcessorEditor(rmpAudioProcessor *);
+    ~rmpAudioProcessorEditor();
 
-    //==============================================================================
+
+    void instrumentSelected(String configName, XmlElement *config, SQLInputSource *source) override;
+    void attachElements();
+
     void paint (Graphics&) override;
     void resized() override;
-    //==============================================================================
     
 private:
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
-    NewProjectAudioProcessor& processor;
+    rmpAudioProcessor *processor;
     
-    MidiKeyboardState& keyboardState = processor.getKBState();
+	ImageComponent bgimage;
+	ImageComponent logoimage;
+	ImageComponent gridimage;
+
+    MidiKeyboardState& keyboardState;
     MidiKeyboardComponent keyboardComponent  { keyboardState, MidiKeyboardComponent::horizontalKeyboard};
     
     Slider masterVolSlider;
+	Slider librarySlider;
     Slider panSlider;
     Label masterVolLabel;
     Label panLabel;
 
-	LayerEffectRackPanel layerPanel;
-	rmpReverbPanel ReverbPanel;
-	rmpAdsrPanel AdsrPanel;
-	rmpFunctionsPanel funcPanel;
-
-	
-
-	class myListBoxModel : public TableListBoxModel {
-	public:
-		myListBoxModel() {};
-		myListBoxModel(XmlElement *libraryXml, NewProjectAudioProcessor * _processor, TableListBox *_listbox) {
-			data = libraryXml;
-			processor = _processor;
-			selected[0] = libraryXml;
-			listbox = _listbox;
-			for (int step = 1; step < 10; ++step)
-				selected[step] = 0;
-
-		};
-			
-		~myListBoxModel() { delete data; };
-		int getNumRows() { 
-			int m = 0;
-			for (int step = 0; step < 10; step++)
-				if (selected[step]) {
-					int counter = 0;
-					forEachXmlChildElementWithTagName(*selected[step], elem, String("folder"))
-						++counter;
-					forEachXmlChildElementWithTagName(*selected[step], elem, String("instrument"))
-						++counter;
-					forEachXmlChildElementWithTagName(*selected[step], elem, String("pack"))
-						++counter;
-					if (counter > m)
-						m = counter;
-					}
-			return m; };
-		void paintRowBackground(Graphics &g, int rowNumber, int width, int height, bool rowIsSelected) {
-		};
-		void paintCell(Graphics &g, int rowNumber, int columnid, int width, int height, bool rowIsSelected) { 
-			if (selected[columnid - 1]) {
-				XmlElement *now;
-				for (now = selected[columnid - 1]->getFirstChildElement(); now != nullptr; now = now->getNextElement()) {
-					if (!(now->getTagName() == String("instrument")) && !(now->getTagName() == String("folder")) && !(now->getTagName() == String("pack")))
-						continue;
-					if (!rowNumber)
-						break;
-					--rowNumber; }
-				
-				if (now)
-					g.drawText(now->getChildByName(String("name"))->getAllSubText(), Rectangle<int>(width, height), Justification(36));
-				
-				};
-		};
-		void cellClicked(int rowNumber, int columnId, const MouseEvent & event) {
-			XmlElement *now;
-			int counter = 0;
-
-			if (selected[columnId - 1] == nullptr)
-				return;
-
-			for (now = selected[columnId - 1]->getFirstChildElement(); now != nullptr; now = now->getNextElement()) 
-				if ((now->getTagName() == String("instrument")) || (now->getTagName() == String("folder")) || (now->getTagName() == String("pack"))) {
-					counter++;
-					if (counter > rowNumber)
-						break;
-				}
-			if (now == nullptr)
-				return;
-			if (now->getTagName() == String("pack") || now->getTagName() == String("folder"))
-				selected[columnId] = now;
-			if (now->getTagName() == String("instrument")) {
-				String abs_path = now->getChildByName(String("file"))->getAllSubText();
-				while (!now->hasTagName(String("pack")))
-					now = data->findParentElementOf(now);
-				SQLInputSource dbsource(abs_path, now->getChildByName(String("filedesc"))->getAttributeValue(0));
-				MemoryInputStream *stream = (MemoryInputStream *)dbsource.createInputStream();
-				char *data = (char *)stream->getData();
-				XmlElement *ex = new XmlElement(*parseXML(String(CharPointer_UTF8(data))));
-				processor->applyInstrumentConfig(ex, &dbsource);
-				delete stream;
-				}
-			listbox->updateContent();
-			listbox->repaint();
-		};
-
-	private:
-		XmlElement *data; 
-		XmlElement *selected[10];
-		NewProjectAudioProcessor * processor;
-		TableListBox *listbox;
-	};
-
-	TableListBox listBox;
-	std::shared_ptr<myListBoxModel> listModel;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NewProjectAudioProcessorEditor)
+    EffectControlPanel mainPanel, layerPanel, reverbPanel, adsrPanel, funcPanel;
+    rmpLibraryMenu     LibraryMenu;
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (rmpAudioProcessorEditor)
 };

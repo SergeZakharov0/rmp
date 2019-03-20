@@ -1,83 +1,55 @@
-/*
-  ==============================================================================
-
-    This file was auto-generated!
-
-    It contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
-*/
-
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "rmpSynth.h"
 #include "SQLInputSource.h"
-#include "EffectRack.h"
+#include "PluginEditor.h"
 
-
-//==============================================================================
-/**
-*/
-class NewProjectAudioProcessor  : public AudioProcessor,
-	public MidiKeyboardStateListener
+class rmpAudioProcessor  : public AudioProcessor
 {
 public:
-    //==============================================================================
-    NewProjectAudioProcessor();
-    ~NewProjectAudioProcessor();
+    rmpAudioProcessor();
+    ~rmpAudioProcessor() = default;
     
-    //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-	void applyInstrumentConfig(XmlElement *config, SQLInputSource *source);
-    void releaseResources() override;
+    void applyInstrumentConfig(String configName, XmlElement *config, SQLInputSource *source);
+    void releaseResources() override {};
 
-   #ifndef JucePlugin_PreferredChannelConfigurations
-    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-   #endif
+    bool isBusesLayoutSupported (const BusesLayout& layouts) const override
+    {
+        return (layouts.getMainOutputChannelSet() == AudioChannelSet::mono() || layouts.getMainOutputChannelSet() != AudioChannelSet::stereo());
+    };
 
     void processBlock (AudioBuffer<float>&, MidiBuffer&) override;
 
-    //==============================================================================
-    AudioProcessorEditor* createEditor() override;
-    bool hasEditor() const override;
+    AudioProcessorEditor* createEditor() override { return new rmpAudioProcessorEditor(this); };
+    bool hasEditor() const override { return true; }
 
-    //==============================================================================
-    const String getName() const override;
+    const String getName() const override { return "Hyperia"; };
 
-    bool acceptsMidi() const override;
-    bool producesMidi() const override;
-    bool isMidiEffect() const override;
-    double getTailLengthSeconds() const override;
+    bool acceptsMidi() const override { return true; };
+    bool producesMidi() const override { return false; };
+    bool isMidiEffect() const override { return false; };
+    double getTailLengthSeconds() const override { return 0.0; };
 
-    //==============================================================================
-    int getNumPrograms() override;
-    int getCurrentProgram() override;
-    void setCurrentProgram (int index) override;
-    const String getProgramName (int index) override;
-    void changeProgramName (int index, const String& newName) override;
+    int getNumPrograms() override { return 1; };
+    int getCurrentProgram() override { return 0; };
+    void setCurrentProgram(int) override { return; };
+    const String getProgramName(int) override { return "Hyperia"; };
+    void changeProgramName(int, const String&) override { return; };
 
-    //==============================================================================
-    void getStateInformation (MemoryBlock& destData) override;
-    void setStateInformation (const void* data, int sizeInBytes) override;
+    void getStateInformation(MemoryBlock&) override {};
+    void setStateInformation(const void*, int) override {};
 
-	void handleNoteOn(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity) override;
-	void handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity) override;
-
-    //==============================================================================
-    MidiKeyboardState& getKBState();
-	EffectRack* getListener();
-    //==========================================================================
+    MidiKeyboardState& getKBState() { return keyboardState; };
+    rmpSynth* getSynth() { return &synth; };
 
 	String libraryPath;
+	String currentConfigName;
 private:
-    //==============================================================================
     rmpSynth synth;
     int numSamples;
     MidiKeyboardState keyboardState;
     static const int maxBufferSize = 2048;
-    float volume;
-    float pan;
-	EffectRack *rack;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NewProjectAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (rmpAudioProcessor)
 };
