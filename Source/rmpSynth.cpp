@@ -1,12 +1,3 @@
-/*
-  ==============================================================================
-
-    rmpSynth.cpp
-    Created: 12 Jan 2019 1:24:52pm
-    Author:  serge
-
-  ==============================================================================
-*/
 
 #include "rmpSynth.h"
 #include "PitchShifter.h"
@@ -14,7 +5,7 @@
 #include <stdlib.h>
   
 
-void LayeredSamplesSound::appendBox(soundBox &tempBox, float hostSampleRate) {
+void LayerSound::appendBox(soundBox &tempBox, float hostSampleRate) {
 
     WavAudioFormat wav_decoder;
     MemoryInputStream *input_stream = new MemoryInputStream((const void *)tempBox.soundfile_data, tempBox.soundfile_size, true);
@@ -60,48 +51,7 @@ void LayeredSamplesSound::appendBox(soundBox &tempBox, float hostSampleRate) {
     delete source;
 }
 
-LayeredSamplesSound::LayeredSamplesSound(XmlElement *layer_item, SQLInputSource *source, float hostSampleRate, std::list<LockingVoice *> &voices) {
-	this->clear();
-
-	forEachXmlChildElement(*layer_item, box_level_item) {
-		if (box_level_item->hasTagName("name"))
-			this->name = box_level_item->getAllSubText();
-		if (box_level_item->hasTagName("box")) {
-			soundBox tempBox;
-			forEachXmlChildElement(*box_level_item, params_item) {
-				if (params_item->hasTagName("mainnote"))
-					tempBox.mainNote = (uint8)params_item->getAllSubText().getIntValue();
-				if (params_item->hasTagName("lowestnote"))
-					tempBox.lowestNote = (uint8)params_item->getAllSubText().getIntValue();
-				if (params_item->hasTagName("highestnote"))
-					tempBox.highestNote = (uint8)params_item->getAllSubText().getIntValue();
-				if (params_item->hasTagName("mainvel"))
-					tempBox.mainVel = (uint8)params_item->getAllSubText().getIntValue();
-				if (params_item->hasTagName("lowestvel"))
-					tempBox.lowestVel = (uint8)params_item->getAllSubText().getIntValue();
-				if (params_item->hasTagName("highestvel"))
-					tempBox.highestVel = (uint8)params_item->getAllSubText().getIntValue();
-				if (params_item->hasTagName("transpose"))
-					tempBox.transposeMethod = params_item->getAllSubText();
-				if (params_item->hasTagName("soundfile")) {
-					String soundfile = String(params_item->getAllSubText());
-					MemoryInputStream *stream = (MemoryInputStream *)source->createInputStreamFor(soundfile);
-					tempBox.soundfile_size = stream->getDataSize();
-					tempBox.soundfile_data = malloc(tempBox.soundfile_size);
-					memcpy(tempBox.soundfile_data, stream->getData(), tempBox.soundfile_size);
-					delete stream;
-					}
-			}
-			this->appendBox(tempBox, hostSampleRate);
-		}	
-        if (box_level_item->hasTagName("effects"))
-        {
-            rack.parseConfig(box_level_item, voices);
-        }
-	}
-}
-   
-void LayeredSamplesSound::resample(AudioBuffer<float> &base, AudioBuffer<float> &resampled, float ratio) {
+void LayerSound::resample(AudioBuffer<float> &base, AudioBuffer<float> &resampled, float ratio) {
     ScopedPointer<LagrangeInterpolator> resampler = new LagrangeInterpolator();
     
     const float **inputs  = base.getArrayOfReadPointers();
@@ -113,145 +63,330 @@ void LayeredSamplesSound::resample(AudioBuffer<float> &base, AudioBuffer<float> 
     }
 }
     
-bool LayeredSamplesSound::appliesToNote(int midiNoteNumber) {
+bool LayerSound::appliesToNote(int midiNoteNumber) {
     for (int vel = 0 ; vel < 128; ++vel)
         if (getDataLength(midiNoteNumber, ((float)vel)/128))
             return true;
     return false;
     }
     
-bool LayeredSamplesSound::appliesToNoteAndVelocity(int midiNoteNumber, float velocity) {
+bool LayerSound::appliesToNoteAndVelocity(int midiNoteNumber, float velocity) {
     return (getDataLength(midiNoteNumber, velocity)) ? true : false;
     }
     
-bool LayeredSamplesSound::appliesToChannel(int) {
+bool LayerSound::appliesToChannel(int) {
     return true;}
  
-void LayeredSamplesSound::clear() {
+void LayerSound::clear() {
 	for (int note = 0; note < 128; ++note)
 		for (int vel = 0; vel < 128; ++vel) {
 			fullData[note][vel] = 0;
 			}
 }
 
-bool SummedLayersVoice::canPlaySound (SynthesiserSound *sound)
+void LayerVoice::noteOn(int midiChannel, int midiNoteNumber, float velocity)
 {
-    return dynamic_cast<const SummedLayersSound*> (sound) != nullptr;
+    currentPlayingMidiChannel = midiChannel;
+    currentlyPlayingNote = midiNoteNumber;
+    currentlyPlayingVelocity = velocity;
+    currentSamplePosition = 0;
+    sendToListenersAboutStart();
 }
 
-void SummedLayersVoice::startNote(int, float velocity, SynthesiserSound *sound, int)
+void LayerVoice::noteOff(bool forced)
 {
-    if (SummedLayersSound* s = dynamic_cast<SummedLayersSound*> (sound))
+    if (askListenersForRelease() || forced) 
     {
-        currentlyPlayingVelocity = velocity;
-        currentlyPlayingSamplePosition = 0;
-        sendToListenersAboutStart();
-    }
-}
-
-void SummedLayersVoice::stopNote(float, bool allowTailOff)
-{
-    if (askListenersForRelease() || !allowTailOff) {
-        currentlyPlayingVelocity = -1;
-        currentlyPlayingSamplePosition = 0;
-        clearCurrentNote();
+        currentPlayingMidiChannel = 0;
+        currentlyPlayingNote = -1;
+        currentlyPlayingVelocity = 0;
+        currentSamplePosition = 0;
     }
 };
 
-template <typename floatType>
-void SummedLayersVoice::_renderNextBlock (AudioBuffer<floatType>& outputBuffer, int startSample, int numSamples)
+void LayerVoice::renderNextBlock(AudioBuffer<float>& outputBuffer, int startSample, int numSamples) 
 {
-    if (auto* playingSound = static_cast<SummedLayersSound*> (getCurrentlyPlayingSound().get()))
+    if (isVoiceActive())
     {
-        int max_numsamples = 0;
-        AudioBuffer<floatType> voice_buffer(outputBuffer.getNumChannels(), outputBuffer.getNumSamples());
-        voice_buffer.clear();
-        for (std::list<LayeredSamplesSound>::iterator current_sound = playingSound->layers.begin(); current_sound != playingSound->layers.end(); ++current_sound)
+        LayerSound &s = dynamic_cast<LayerSound&>(sound);
+        AudioBuffer<float> *pure_data = s.getData(currentlyPlayingNote, currentlyPlayingVelocity).get();
+
+        int datasize = s.getDataLength(currentlyPlayingNote, currentlyPlayingVelocity);
+        int samplesToCopy = ((numSamples + currentSamplePosition) > datasize) ? datasize - currentSamplePosition : numSamples;
+
+        if (samplesToCopy <= 0)
+            this->noteOff(false);
+
+        AudioBuffer<float> aftereffect(*pure_data);
+        rack->applyOn(aftereffect, currentSamplePosition, samplesToCopy);
+
+        if (aftereffect.getNumChannels() > 1 && outputBuffer.getNumChannels() > 1)
         {
-            AudioBuffer<floatType> *pure_data = current_sound->getData(getCurrentlyPlayingNote(), currentlyPlayingVelocity).get();
-            if (pure_data == nullptr)
-                return;
-            int datasize = current_sound->getDataLength(getCurrentlyPlayingNote(), currentlyPlayingVelocity);
-            int current_numsamples = ((numSamples + currentlyPlayingSamplePosition) > datasize) ? datasize - currentlyPlayingSamplePosition : numSamples;
-
-            if (current_numsamples <= 0)
-                continue;
-
-            if (max_numsamples < current_numsamples)
-                max_numsamples = current_numsamples;
-
-            AudioBuffer<floatType> aftereffect(*pure_data);
-            current_sound->rack.applyOn(aftereffect, this, currentlyPlayingSamplePosition, current_numsamples);
-                
-            if (aftereffect.getNumChannels() > 1 && voice_buffer.getNumChannels() > 1)
-            {
-                voice_buffer.addFrom(0, startSample, aftereffect, 0, currentlyPlayingSamplePosition, current_numsamples);
-                voice_buffer.addFrom(1, startSample, aftereffect, 1, currentlyPlayingSamplePosition, current_numsamples);
-            }
-            else if (aftereffect.getNumChannels() == 1)
-            {
-                voice_buffer.addFrom(0, startSample, aftereffect, 0, currentlyPlayingSamplePosition, current_numsamples);
-                voice_buffer.addFrom(1, startSample, aftereffect, 0, currentlyPlayingSamplePosition, current_numsamples);
-            }
-            else if (voice_buffer.getNumChannels() == 1)
-            {
-                aftereffect.applyGain(0, startSample, current_numsamples, 0.5);
-                voice_buffer.addFrom(0, startSample, aftereffect, 0, currentlyPlayingSamplePosition, current_numsamples);
-                voice_buffer.addFrom(0, startSample, aftereffect, 1, currentlyPlayingSamplePosition, current_numsamples, 0.5);
-            }         
+            outputBuffer.addFrom(0, startSample, aftereffect, 0, currentSamplePosition, samplesToCopy);
+            outputBuffer.addFrom(1, startSample, aftereffect, 1, currentSamplePosition, samplesToCopy);
         }
-
-        playingSound->rack.applyOn(voice_buffer, this, startSample, max_numsamples);
-        if (outputBuffer.getNumChannels() > 1 && voice_buffer.getNumChannels() > 1)
+        else if (aftereffect.getNumChannels() == 1)
         {
-            outputBuffer.addFrom(0, 0, voice_buffer, 0, 0, outputBuffer.getNumSamples());
-            outputBuffer.addFrom(1, 0, voice_buffer, 1, 0, outputBuffer.getNumSamples());
-        }
-        else if (voice_buffer.getNumChannels() == 1)
-        {
-            outputBuffer.addFrom(0, 0, voice_buffer, 0, 0, outputBuffer.getNumSamples());
-            outputBuffer.addFrom(1, 0, voice_buffer, 0, 0, outputBuffer.getNumSamples());
+            outputBuffer.addFrom(0, startSample, aftereffect, 0, currentSamplePosition, samplesToCopy);
+            outputBuffer.addFrom(1, startSample, aftereffect, 0, currentSamplePosition, samplesToCopy);
         }
         else if (outputBuffer.getNumChannels() == 1)
         {
-            voice_buffer.applyGain(0, 0, max_numsamples, 0.5);
-            outputBuffer.addFrom(0, 0, voice_buffer, 0, 0, outputBuffer.getNumSamples());
-            outputBuffer.addFrom(0, 0, voice_buffer, 1, 0, outputBuffer.getNumSamples(), 0.5);
+            aftereffect.applyGain(0, currentSamplePosition, samplesToCopy, 0.5);
+            outputBuffer.addFrom(0, startSample, aftereffect, 0, currentSamplePosition, samplesToCopy);
+            outputBuffer.addFrom(0, startSample, aftereffect, 1, currentSamplePosition, samplesToCopy, 0.5);
         }
-        currentlyPlayingSamplePosition += max_numsamples;
+        currentSamplePosition += samplesToCopy;
     }
 }
 
-void SummedLayersVoice::renderNextBlock (AudioBuffer<float>& outputBuffer, int startSample, int numSamples) {
+void SummedVoice::noteOn(int midiChannel, int midiNoteNumber, float velocity)
+{
+    currentPlayingMidiChannel = midiChannel;
+    currentlyPlayingNote = midiNoteNumber;
+    currentlyPlayingVelocity = velocity;
+    currentSamplePosition = 0;
+    for (auto it = layerVoices.begin(); it != layerVoices.end(); ++it)
+        (*it)->noteOn(midiChannel, midiNoteNumber, velocity);
+    sendToListenersAboutStart();
 
-    _renderNextBlock<float>(outputBuffer, startSample, numSamples);
 }
 
+void SummedVoice::noteOff(bool forced)
+{
+    if (askListenersForRelease() || forced)
+    {
+        for (auto it = layerVoices.begin(); it != layerVoices.end(); ++it)
+            (*it)->noteOff(forced);
+        refreshPlayingStatus();
+    }
+};
 
-void VelocityBasedSynthesiser::noteOn(const int midiChannel,
-    const int midiNoteNumber,
-    const float velocity)
+void SummedVoice::refreshPlayingStatus()
+{
+    bool status = false;
+    for (auto voice = layerVoices.begin(); voice != layerVoices.end(); ++voice)
+        if ((*voice)->isVoiceActive())
+            status = true;
+
+    if (!status)
+    {
+        currentPlayingMidiChannel = 0;
+        currentlyPlayingNote = -1;
+        currentlyPlayingVelocity = 0;
+        currentSamplePosition = 0;
+        askListenersForRelease();
+    }
+}
+
+void SummedVoice::renderNextBlock (AudioBuffer<float>& outputBuffer, int startSample, int numSamples)
+{
+   // SummedVoice is responsible only for MIDI info parsing
+}
+
+LayerVoice *SummedVoice::findVoice(LayerSound *ofSound)
+{
+    for (auto voice = layerVoices.begin(); voice != layerVoices.end(); ++voice)
+        if (voice->get()->getSound() == ofSound)
+            return voice->get();
+    throw;
+}
+
+void rmpSynth::noteOn(const int midiChannel, const int midiNoteNumber, const float velocity)
 {
     const ScopedLock sl(lock);
-    for (auto* s : sounds)
+    if (sound->appliesToNoteAndVelocity(midiNoteNumber, velocity) && sound->appliesToChannel(midiChannel))
     {
-        VelocityBasedSound* sound = static_cast<VelocityBasedSound*> (s);
-        if (!sound)
-            continue;
-        if (sound->appliesToNoteAndVelocity(midiNoteNumber, velocity) && sound->appliesToChannel(midiChannel))
-        {
-            for (auto* voice : voices)
-                if (voice->getCurrentlyPlayingNote() == midiNoteNumber && voice->isPlayingChannel(midiChannel))
-                    stopVoice(voice, 1.0f, true);
+        for (auto voice = voices.begin(); voice != voices.end(); ++voice)
+            if (voice->get()->getCurrentlyPlayingNote() == midiNoteNumber && voice->get()->isPlayingChannel(midiChannel))
+                voice->get()->noteOff(true);
 
-            startVoice(findFreeVoice(sound, midiChannel, midiNoteNumber, isNoteStealingEnabled()),
-                sound, midiChannel, midiNoteNumber, velocity);
-        }
+        SummedVoice *current = findFreeVoice(midiChannel, midiNoteNumber, isNoteStealingEnabled());
+        if (current)
+            current->noteOn(midiChannel, midiNoteNumber, velocity);
     }
+}
+
+void rmpSynth::noteOff(const int midiChannel, const int midiNoteNumber, const float velocity)
+{
+    const ScopedLock sl(lock);
+
+    for (auto voice = voices.begin(); voice != voices.end(); ++voice)
+    {
+        if (voice->get()->getCurrentlyPlayingNote() == midiNoteNumber && voice->get()->isPlayingChannel(midiChannel))
+            voice->get()->noteOff(false);
+    }
+}
+
+void rmpSynth::reset()
+{
+    const ScopedLock sl(lock);
+    for (auto voice = voices.begin(); voice != voices.end(); ++voice)
+        voice->get()->noteOff(true);
+}
+
+void rmpSynth::renderNextBlock(AudioBuffer<float>& outputAudio, const MidiBuffer& midiData, int startSample, int numSamples)
+{
+    const int targetChannels = outputAudio.getNumChannels();
+
+    MidiBuffer::Iterator midiIterator(midiData);
+    midiIterator.setNextSamplePosition(startSample);
+
+    bool firstEvent = true;
+    int midiEventPos;
+    MidiMessage m;
+
+    const ScopedLock sl(lock);
+
+    while (numSamples > 0)
+    {
+        if (!midiIterator.getNextEvent(m, midiEventPos))
+        {
+            if (targetChannels > 0)
+                renderVoices(outputAudio, startSample, numSamples);
+
+            return;
+        }
+
+        const int samplesToNextMidiMessage = midiEventPos - startSample;
+
+        if (samplesToNextMidiMessage >= numSamples)
+        {
+            if (targetChannels > 0)
+                renderVoices(outputAudio, startSample, numSamples);
+
+            handleMidiEvent(m);
+            break;
+        }
+
+        if (samplesToNextMidiMessage < ((firstEvent && !subBlockSubdivisionIsStrict) ? 1 : minimumSubBlockSize))
+        {
+            handleMidiEvent(m);
+            continue;
+        }
+
+        firstEvent = false;
+
+        if (targetChannels > 0)
+            renderVoices(outputAudio, startSample, samplesToNextMidiMessage);
+
+        handleMidiEvent(m);
+        startSample += samplesToNextMidiMessage;
+        numSamples -= samplesToNextMidiMessage;
+    }
+    while (midiIterator.getNextEvent(m, midiEventPos))
+        handleMidiEvent(m);
 }
 
 void rmpSynth::renderVoices(AudioBuffer<float>& buffer, int startSample, int numSamples)
 {
-    for (auto* voice : voices)
-        voice->renderNextBlock(buffer, startSample, numSamples);
+    AudioBuffer<float> soundsumBuffer(buffer.getNumChannels(), buffer.getNumSamples());
+    soundsumBuffer.clear();
+    AudioBuffer<float> layersumBuffer(buffer.getNumChannels(), buffer.getNumSamples());
+    for (auto layerSound = sound->layerSounds.begin(); layerSound != sound->layerSounds.end(); ++layerSound)
+    {
+        layersumBuffer.clear();
+        for (auto sumVoice = voices.begin(); sumVoice != voices.end(); ++sumVoice)
+        {
+            LayerVoice *layerVoice = sumVoice->get()->findVoice(layerSound->get());
+            layerVoice->renderNextBlock(layersumBuffer, startSample, numSamples);
+            sumVoice->get()->refreshPlayingStatus();
+        }
+        layerSound->get()->rack->applyOn(layersumBuffer, startSample, numSamples);
+        
+        if (layersumBuffer.getNumChannels() > 1 && soundsumBuffer.getNumChannels() > 1)
+        {
+            soundsumBuffer.addFrom(0, startSample, layersumBuffer, 0, startSample, numSamples);
+            soundsumBuffer.addFrom(1, startSample, layersumBuffer, 1, startSample, numSamples);
+        }
+        else if (layersumBuffer.getNumChannels() == 1)
+        {
+            soundsumBuffer.addFrom(0, startSample, layersumBuffer, 0, startSample, numSamples);
+            soundsumBuffer.addFrom(1, startSample, layersumBuffer, 0, startSample, numSamples);
+        }
+        else if (soundsumBuffer.getNumChannels() == 1)
+        {
+            layersumBuffer.applyGain(0, startSample, numSamples, 0.5);
+            soundsumBuffer.addFrom(0, startSample, layersumBuffer, 0, startSample, numSamples);
+            soundsumBuffer.addFrom(0, startSample, layersumBuffer, 1, startSample, numSamples, 0.5);
+        }
+    }
+    sound->rack->applyOn(soundsumBuffer, startSample, numSamples);
+    
+    if (soundsumBuffer.getNumChannels() > 1 && buffer.getNumChannels() > 1)
+    {
+        buffer.addFrom(0, startSample, soundsumBuffer, 0, startSample, numSamples);
+        buffer.addFrom(1, startSample, soundsumBuffer, 1, startSample, numSamples);
+    }
+    else if (soundsumBuffer.getNumChannels() == 1)
+    {
+        buffer.addFrom(0, startSample, soundsumBuffer, 0, startSample, numSamples);
+        buffer.addFrom(1, startSample, soundsumBuffer, 0, startSample, numSamples);
+    }
+    else if (buffer.getNumChannels() == 1)
+    {
+        soundsumBuffer.applyGain(0, startSample, numSamples, 0.5);
+        buffer.addFrom(0, startSample, soundsumBuffer, 0, startSample, numSamples);
+        buffer.addFrom(0, startSample, soundsumBuffer, 1, startSample, numSamples, 0.5);
+    }
 }
+
+void rmpSynth::handleMidiEvent(const MidiMessage& m)
+{
+    const int channel = m.getChannel();
+
+    if (m.isNoteOn())
+    {
+        noteOn(channel, m.getNoteNumber(), m.getFloatVelocity());
+    }
+    else if (m.isNoteOff())
+    {
+        noteOff(channel, m.getNoteNumber(), m.getFloatVelocity());
+    }
+    else if (m.isAllNotesOff() || m.isAllSoundOff())
+    {
+        for (auto voice = voices.begin(); voice != voices.end(); ++voice)
+            voice->get()->noteOff(false);
+    }
+    else if (m.isPitchWheel())
+    {
+        const int wheelPos = m.getPitchWheelValue();
+        lastPitchWheelValues[channel - 1] = wheelPos;
+        handlePitchWheel(channel, wheelPos);
+    }
+    else if (m.isAftertouch())
+    {
+        handleAftertouch(channel, m.getNoteNumber(), m.getAfterTouchValue());
+    }
+    else if (m.isChannelPressure())
+    {
+        handleChannelPressure(channel, m.getChannelPressureValue());
+    }
+    else if (m.isController())
+    {
+        handleController(channel, m.getControllerNumber(), m.getControllerValue());
+    }
+    else if (m.isProgramChange())
+    {
+        handleProgramChange(channel, m.getProgramChangeNumber());
+    }
+}
+
+SummedVoice* rmpSynth::findFreeVoice(int midiChannel, int midiNoteNumber, bool stealIfNoneAvailable)
+{
+    const ScopedLock sl(lock);
+    for (auto voice = voices.begin(); voice != voices.end(); ++voice)
+        if (!voice->get()->isVoiceActive())
+            return voice->get();
+
+    if (stealIfNoneAvailable)
+        return findVoiceToSteal(midiChannel, midiNoteNumber);
+
+    return nullptr;
+}
+
+SummedVoice* rmpSynth::findVoiceToSteal(int midiChannel, int midiNoteNumber)
+{
+    return nullptr;
+}
+

@@ -4,6 +4,7 @@
 #include "rmpSynth.h"
 #include "SQLInputSource.h"
 #include "PluginEditor.h"
+#include "InstrBuilder.h"
 
 class rmpAudioProcessor  : public AudioProcessor
 {
@@ -13,6 +14,7 @@ public:
     
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void applyInstrumentConfig(String configName, XmlElement *config, SQLInputSource *source);
+    void reloadSynth();
     void releaseResources() override {};
 
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override
@@ -42,13 +44,17 @@ public:
     void setStateInformation(const void*, int) override {};
 
     MidiKeyboardState& getKBState() { return keyboardState; };
-    rmpSynth* getSynth() { return &synth; };
+    rmpSynth* getSynth() { return synth; };
 
 	String libraryPath;
-	String currentConfigName;
+
+    String currentConfigName = "";
+    XmlElement *currentConfig = nullptr; 
+    SQLInputSource *currentSource = nullptr;
 private:
-    rmpSynth synth;
-    int numSamples;
+    rmpSynth *synth = nullptr;
+    float sampleRate = 0;
+    int numSamples = 0;
     MidiKeyboardState keyboardState;
     static const int maxBufferSize = 2048;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (rmpAudioProcessor)

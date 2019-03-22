@@ -40,15 +40,15 @@ rmpAudioProcessorEditor::rmpAudioProcessorEditor(rmpAudioProcessor *p)
     addAndMakeVisible(LibraryMenu);
 
     // Main Panel Initializaton
-    mainPanel.addRotarySlider(nullptr, Rectangle<int>(0, 0, 82, 82), "volume", Image());
-    mainPanel.addRotarySlider(nullptr, Rectangle<int>(0, 155, 82, 82), "pan", Image());
+    mainPanel.addRotarySlider(nullptr, "", Rectangle<int>(0, 0, 82, 82), "volume", Image());
+    mainPanel.addRotarySlider(nullptr, "",  Rectangle<int>(0, 155, 82, 82), "pan", Image());
     addAndMakeVisible(mainPanel);
 
     // Reverb Panel Initializaton
-    adsrPanel.addRotarySlider(nullptr, Rectangle<int>(66, 18, 82, 82), "attack", Image());
-    adsrPanel.addRotarySlider(nullptr, Rectangle<int>(191, 18, 82, 82), "decay", Image());
-    adsrPanel.addRotarySlider(nullptr, Rectangle<int>(66, 170, 82, 82), "sustain", Image());
-    adsrPanel.addRotarySlider(nullptr, Rectangle<int>(191, 170, 82, 82), "release", Image());
+    adsrPanel.addRotarySlider(nullptr, "", Rectangle<int>(66, 18, 82, 82), "attack", Image());
+    adsrPanel.addRotarySlider(nullptr, "", Rectangle<int>(191, 18, 82, 82), "decay", Image());
+    adsrPanel.addRotarySlider(nullptr, "", Rectangle<int>(66, 170, 82, 82), "sustain", Image());
+    adsrPanel.addRotarySlider(nullptr, "", Rectangle<int>(191, 170, 82, 82), "release", Image());
     addAndMakeVisible(adsrPanel);
 
 /*
@@ -126,17 +126,17 @@ void rmpAudioProcessorEditor::instrumentSelected(String configName, XmlElement *
 
 void rmpAudioProcessorEditor::attachElements()
 {
-    SummedLayersSound *sound = static_cast<SummedLayersSound *>(processor->getSynth()->getSound(0).get());
+    SummedSound *sound = processor->getSynth()->getSound();
     
     // Link Main Panel
-    mainPanel.setLink(sound->rack.findEffect("volume")->getLinkToParam("value"), "volume");
-    mainPanel.setLink(sound->rack.findEffect("pan")->getLinkToParam("value"), "pan");
+    mainPanel.setLink(sound->rack->findEffect("volume"), "value", "volume");
+    mainPanel.setLink(sound->rack->findEffect("pan"), "value", "pan");
 
     // Link ADSR Panel
-    adsrPanel.setLink(sound->rack.findEffect("adsr")->getLinkToParam("attack"), "attack");
-    adsrPanel.setLink(sound->rack.findEffect("adsr")->getLinkToParam("decay"), "decay");
-    adsrPanel.setLink(sound->rack.findEffect("adsr")->getLinkToParam("sustain"), "sustain");
-    adsrPanel.setLink(sound->rack.findEffect("adsr")->getLinkToParam("release"), "release");
+    adsrPanel.setLink(sound->rack->findEffect("adsr"), "attack", "attack");
+    adsrPanel.setLink(sound->rack->findEffect("adsr"), "decay", "decay");
+    adsrPanel.setLink(sound->rack->findEffect("adsr"), "sustain", "sustain");
+    adsrPanel.setLink(sound->rack->findEffect("adsr"), "release", "release");
 }
 
 void rmpAudioProcessorEditor::paint (Graphics&)

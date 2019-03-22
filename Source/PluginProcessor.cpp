@@ -17,31 +17,39 @@ rmpAudioProcessor::rmpAudioProcessor() : AudioProcessor (BusesProperties().withO
 	else
 		libraryPath = datafile.loadFileAsString();
 
-
-	synth.setCurrentPlaybackSampleRate(48000);
+    synth = nullptr;
 }
 
-void rmpAudioProcessor::applyInstrumentConfig(String configName, XmlElement *config, SQLInputSource *source) {
-	synth.clearSounds();
-    synth.clearVoices();
-	
-	currentConfigName = configName;
-
-    std::list<LockingVoice *> voicesCreated;
-    for (int i = 0; i < 2; ++i) 
-    {
-        SummedLayersVoice *now = new SummedLayersVoice();
-        voicesCreated.push_back((LockingVoice *)now);
-        synth.addVoice(now);
-    }
-
-	synth.addSound(new SummedLayersSound(config, source, (float)synth.getSampleRate(), voicesCreated));
-	}
-
-void rmpAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void rmpAudioProcessor::applyInstrumentConfig(String configName, XmlElement *config, SQLInputSource *source) 
 {
-    synth.setCurrentPlaybackSampleRate (sampleRate);
+    if (currentConfigName == configName)
+        return;
+
+	currentConfigName = configName;
+    currentConfig = config;
+    currentSource = source;
+    reloadSynth();
+}
+
+void rmpAudioProcessor::reloadSynth()
+{
+    if (currentConfigName == "")
+        return;
+
+    if (synth)
+        delete(synth);
+
+    InstrBuilder builder(currentConfig, currentSource, sampleRate);
+    synth = builder.parseInstr(4);
+
+}
+
+void rmpAudioProcessor::prepareToPlay (double newRate, int samplesPerBlock)
+{
     numSamples = samplesPerBlock;
+    sampleRate = newRate;
+    if (synth)
+        reloadSynth();
 }
 
 void rmpAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
@@ -54,7 +62,8 @@ void rmpAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mi
         buffer.clear (i, 0, buffer.getNumSamples());
 
     keyboardState.processNextMidiBuffer (midiMessages, 0, numSamples, true);
-    synth.renderNextBlock (buffer, midiMessages, 0, numSamples); 
+    if (synth)
+        synth->renderNextBlock(buffer, midiMessages, 0, numSamples);
 }
 
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()

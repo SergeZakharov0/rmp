@@ -1,20 +1,11 @@
-/*
-  ==============================================================================
-
-    rmpSynth.h
-    Created: 12 Jan 2019 1:25:03pm
-    Author:  serge
-
-  ==============================================================================
-*/
 
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <list>
 #include "EffectRack.h"
-#include "LockingVoice.h"
 #include <algorithm>
+#include "StartStopBroadcaster.h"
 #include "SQLInputSource.h"
 #include <unordered_set>
 
@@ -28,20 +19,26 @@ struct soundBox {
     ~soundBox() { free(soundfile_data); }
 };
 
-class VelocityBasedSound : public SynthesiserSound 
-{
-    public:
-    virtual bool appliesToNoteAndVelocity (int midiNoteNumber, float velocity) = 0;
-    private:
-
-    JUCE_LEAK_DETECTOR (VelocityBasedSound)
-};
-
-class LayeredSamplesSound : public VelocityBasedSound 
+class rmpSound
 {
 public:
-    LayeredSamplesSound(XmlElement *layer_item, SQLInputSource *source, float hostSampleRate, std::list<LockingVoice *> &voices);
-    ~LayeredSamplesSound() = default;
+    rmpSound() = default;
+    virtual ~rmpSound() = default;
+    rmpSound(rmpSound &) = default;
+    rmpSound(rmpSound &&) = default;
+
+    virtual bool appliesToNote(int midiNoteNumber) = 0;
+    virtual bool appliesToNoteAndVelocity(int midiNoteNumber, float velocity) = 0;
+    virtual bool appliesToChannel(int midiChannel) = 0;
+};
+
+class LayerSound : public rmpSound
+{
+public:
+    LayerSound() = default;
+    ~LayerSound() = default;
+    LayerSound(LayerSound &) = default;
+    LayerSound(LayerSound &&) = default;
 
     bool appliesToNote(int midiNoteNumber) override;
     bool appliesToNoteAndVelocity(int midiNoteNumber, float velocity);
@@ -56,96 +53,204 @@ public:
         return (fullData[midiNoteNumber][int(velocity * 128)]) ? fullData[midiNoteNumber][int(velocity * 128)]->getNumSamples() : 0;
     };
 
-    rmpEffectRack rack;
+    std::shared_ptr<rmpEffectRack> rack;
 protected:
+    friend class InstrBuilder;
     void appendBox(soundBox &tempBox, float hostSampleRate);
     void resample(AudioBuffer<float> &base, AudioBuffer<float> &resampled, float ratio);
 	void clear();
 
     String name;
 	std::shared_ptr< AudioBuffer<float> > fullData[128][128];
-private:
-    JUCE_LEAK_DETECTOR (LayeredSamplesSound)
 };
 
-class SummedLayersVoice : public LockingVoice
-{
+class SummedSound : public rmpSound {
 public:
-    SummedLayersVoice() = default;
-    ~SummedLayersVoice() = default;
+    SummedSound() = default;
+    ~SummedSound() = default;
 
-    bool canPlaySound(SynthesiserSound *sound);
-    void startNote(int midiNoteNumber, float velocity, SynthesiserSound *sound, int currentPitchWheelPosition);
-    void stopNote(float velocity, bool allowTailOff);
-    void renderNextBlock(AudioBuffer<float> &outputBuffer, int startSample, int numSamples) override;
-    void pitchWheelMoved(int) {};
-    void controllerMoved(int, int) {};
-
-protected:
-    float currentlyPlayingVelocity = 0;
-    int currentlyPlayingSamplePosition = 0;
-private:
-    template <typename floatType>
-    void _renderNextBlock(AudioBuffer<floatType>& outputBuffer, int startSample, int numSamples);
-
-    JUCE_LEAK_DETECTOR(SummedLayersVoice)
-};
-
-
-class SummedLayersSound : public VelocityBasedSound {
-public:
-    SummedLayersSound() {};
-    SummedLayersSound(XmlElement *main_element, SQLInputSource *source, float hostSampleRate, std::list<LockingVoice *> &voices)
+    bool appliesToNote(int midiNoteNumber)
     {
-        forEachXmlChildElement(*main_element, layer_item) {
-            if (layer_item->hasTagName("layer")) 
-            {
-                layers.emplace_back(layer_item, source, hostSampleRate, voices);
-            }
-            if (layer_item->hasTagName("effects")) 
-            {
-                rack.parseConfig(layer_item, voices);
-            }
-        }
-    }
-    ~SummedLayersSound() = default;
-
-    bool appliesToNote(int midiNoteNumber) 
-    {
-        for (std::list<LayeredSamplesSound>::iterator it = layers.begin(); it != layers.end(); ++it)
-            if (it->appliesToNote(midiNoteNumber))
+        for (auto it = layerSounds.begin(); it != layerSounds.end(); ++it)
+            if ((*it)->appliesToNote(midiNoteNumber))
                 return true;
         return false;
     }
     bool appliesToNoteAndVelocity(int midiNoteNumber, float velocity)
     {
-        for (std::list<LayeredSamplesSound>::iterator it = layers.begin(); it != layers.end(); ++it)
-            if (it->appliesToNoteAndVelocity(midiNoteNumber, velocity))
+        for (auto it = layerSounds.begin(); it != layerSounds.end(); ++it)
+            if ((*it)->appliesToNoteAndVelocity(midiNoteNumber, velocity))
                 return true;
         return false;
     }
     bool appliesToChannel(int midiChannel)
     {
-        for (std::list<LayeredSamplesSound>::iterator it = layers.begin(); it != layers.end(); ++it)
-            if (it->appliesToChannel(midiChannel))
+        for (auto it = layerSounds.begin(); it != layerSounds.end(); ++it)
+            if ((*it)->appliesToChannel(midiChannel))
                 return true;
         return false;
     }
 
-    rmpEffectRack rack;
-    std::list<LayeredSamplesSound> layers;
-private:
-    JUCE_LEAK_DETECTOR(SummedLayersSound)
+    std::shared_ptr<rmpEffectRack> rack;
+    std::list<std::shared_ptr<LayerSound>> layerSounds;
+protected:
+    String name;
 };
 
-class VelocityBasedSynthesiser : public Synthesiser
+
+class rmpVoice : public StartStopBroadcaster
 {
 public:
-    void noteOn(const int midiChannel, const int midiNoteNumber, const float velocity) override;
+    rmpVoice(rmpSound &_sound) : sound(_sound) {};
+    virtual ~rmpVoice() = default;
+    rmpVoice(rmpVoice &) = default;
+    rmpVoice(rmpVoice &&) = default;
+
+    int getCurrentlyPlayingNote() const noexcept { return currentlyPlayingNote; }
+    rmpSound *getSound() const noexcept { return &sound; }
+
+    virtual void noteOn(int midiChannel, int midiNoteNumber, float velocity) = 0;
+    virtual void noteOff(bool forced) = 0;
+
+    bool isVoiceActive() const { return currentlyPlayingNote >= 0; };
+    void reactOnDelayedStop() { noteOff(false); };
+
+    virtual void pitchWheelMoved(int newPitchWheelValue) {};
+    virtual void controllerMoved(int controllerNumber, int newControllerValue) {};
+    virtual void aftertouchChanged(int newAftertouchValue) {};
+    virtual void channelPressureChanged(int newChannelPressureValue) {};
+    virtual void renderNextBlock(AudioBuffer<float>& outputBuffer, int startSample, int numSamples) = 0;
+
+    virtual void setCurrentPlaybackSampleRate(double newRate) { currentSampleRate = newRate; };
+    virtual bool isPlayingChannel(int midiChannel) const { return true; };
+
+    double getSampleRate() const noexcept { return currentSampleRate; }
+
+    bool isSustainPedalDown() const noexcept { return sustainPedalDown; }
+    void setSustainPedalDown(bool isNowDown) noexcept { sustainPedalDown = isNowDown; }
+
+    bool isSostenutoPedalDown() const noexcept { return sostenutoPedalDown; }
+    void setSostenutoPedalDown(bool isNowDown) noexcept { sostenutoPedalDown = isNowDown; }
+
+protected:
+    rmpSound &sound;
+    double currentSampleRate = 44100.0;
+    int currentlyPlayingNote = -1, currentPlayingMidiChannel = 0, currentSamplePosition = 0;
+    float currentlyPlayingVelocity = 0;
+    bool keyIsDown = false, sustainPedalDown = false, sostenutoPedalDown = false;
+    friend class InstrBuilder;
 };
 
-class rmpSynth : public VelocityBasedSynthesiser
+class LayerVoice : public rmpVoice
 {
 public:
-    void renderVoices(AudioBuffer<float>& buffer, int startSample, int numSamples) override;
+    LayerVoice(LayerSound &_sound) : rmpVoice(_sound) {};
+    ~LayerVoice() = default;
+    LayerVoice(LayerVoice &) = default;
+    LayerVoice(LayerVoice &&) = default;
+
+    void noteOn(int midiChannel, int midiNoteNumber, float velocity) override;
+    void noteOff(bool forced) override;
+    void renderNextBlock(AudioBuffer<float> &outputBuffer, int startSample, int numSamples) override;
+
+    void repairRackLinks()
+    {
+        clearListeners();
+        StartStopBroadcaster::Listener *adsr = dynamic_cast<StartStopBroadcaster::Listener *>(rack->findEffect("adsr"));
+        if (adsr)
+            addListener(adsr);
+    };
+
+    std::shared_ptr<rmpEffectRack> rack;
+};
+
+class SummedVoice : public rmpVoice
+{
+public:
+    SummedVoice(SummedSound &_sound) : rmpVoice(_sound) {};
+    ~SummedVoice() = default;
+    SummedVoice(SummedVoice &&) = default;
+
+    void noteOn(int midiChannel, int midiNoteNumber, float velocity) override;
+    void noteOff(bool forced) override;
+
+    void refreshPlayingStatus();
+
+    void renderNextBlock(AudioBuffer<float> &outputBuffer, int startSample, int numSamples) override;
+
+    LayerVoice *findVoice(LayerSound *ofSound);
+    void repairRackLinks()
+    {
+        clearListeners();
+        StartStopBroadcaster::Listener *adsr = dynamic_cast<StartStopBroadcaster::Listener *>(rack->findEffect("adsr"));
+        if (adsr)
+            addListener(adsr);
+    };
+
+    std::shared_ptr<rmpEffectRack> rack;
+    std::list<std::shared_ptr<LayerVoice>> layerVoices;
+};
+
+class rmpSynth
+{
+public:
+    rmpSynth() = default;
+    ~rmpSynth() = default;
+    rmpSynth(rmpSynth &&) = default;
+
+    void clearVoices() { return voices.clear(); };
+    int getNumVoices() const noexcept { return voices.size(); }
+    
+    SummedSound *getSound()
+    {
+        return sound.get();
+    };
+
+    void setNoteStealingEnabled(bool shouldSteal) { shouldStealNotes = shouldSteal; }
+    bool isNoteStealingEnabled() const noexcept { return shouldStealNotes; }
+
+    void noteOn(int midiChannel, int midiNoteNumber, float velocity);
+    void noteOff(int midiChannel, int midiNoteNumber, float velocity);
+    void reset();
+
+    void handlePitchWheel(int midiChannel, int wheelValue) {};
+    void handleController(int midiChannel, int controllerNumber, int controllerValue) {};
+    void handleAftertouch(int midiChannel, int midiNoteNumber, int aftertouchValue) {};
+    void handleChannelPressure(int midiChannel, int channelPressureValue) {};
+    void handleSustainPedal(int midiChannel, bool isDown) {};
+    void handleSostenutoPedal(int midiChannel, bool isDown) {};
+    void handleSoftPedal(int midiChannel, bool isDown) {};
+    void handleProgramChange(int midiChannel, int programNumber) {};
+
+    void setCurrentPlaybackSampleRate(double rate) { sampleRate = rate; };
+    double getSampleRate() const noexcept { return sampleRate; }
+
+    void renderNextBlock(AudioBuffer<float>& outputAudio, const MidiBuffer& inputMidi, int startSample, int numSamples);
+
+    void setMinimumRenderingSubdivisionSize(int numSamples, bool shouldBeStrict = false) noexcept
+    {
+        minimumSubBlockSize = numSamples;
+        subBlockSubdivisionIsStrict = shouldBeStrict;
+    }
+
+protected:
+    CriticalSection lock;
+
+    friend class InstrBuilder;
+    std::list<std::shared_ptr<SummedVoice>> voices;
+    std::shared_ptr<SummedSound> sound;
+    int lastPitchWheelValues[16];
+
+    void renderVoices(AudioBuffer<float>& outputAudio, int startSample, int numSamples);
+    SummedVoice* findFreeVoice(int midiChannel, int midiNoteNumber, bool stealIfNoneAvailable);
+    SummedVoice* findVoiceToSteal(int midiChannel, int midiNoteNumber);
+
+    void handleMidiEvent(const MidiMessage&);
+
+    double sampleRate = 0;
+    uint32 lastNoteOnCounter = 0;
+    int minimumSubBlockSize = 32;
+    bool subBlockSubdivisionIsStrict = false;
+    bool shouldStealNotes = true;
+    BigInteger sustainPedalsDown;
 };

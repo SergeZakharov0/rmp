@@ -3,7 +3,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <map>
 #include <unordered_set>
-#include "LockingVoice.h"
+#include "StartStopBroadcaster.h"
 
 enum TupleValues
 {
@@ -21,7 +21,7 @@ public:
     class Listener {
     public:
         virtual ~Listener() = default;
-        virtual	void EffectParamsChanged(rmpEffect *effect) = 0;
+        virtual	void EffectParamsChanged(rmpEffect &effect) = 0;
     };
 
     void addListener(Listener *listener) 
@@ -31,7 +31,7 @@ public:
     void sentToListeners() 
     {
         for (Listener *listener : listeners)
-            listener->EffectParamsChanged(this);
+            listener->EffectParamsChanged(*this);
     }
     void clearListeners() 
     {
@@ -41,15 +41,14 @@ public:
     typedef std::tuple<float, float, float> valueTuple;
     typedef std::map<String, valueTuple> Parameters;
     
-    void setParams(Parameters parameters)
+    virtual void setParams(Parameters parameters)
     {
         params = parameters;
         syncParams();
         sentToListeners();
     };
-    void setSingleParam(String param, float val)
+    virtual void setSingleParam(String param, float val)
     {
-        
         std::get<TupleValues::currentValue>(params[param]) = val;
         syncParams();
         sentToListeners();
@@ -68,7 +67,7 @@ public:
     };
 
 
-    virtual void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample = 0, int numSamples = -1) = 0;
+    virtual void applyOn(AudioBuffer<float> &buffer, int startSample = 0, int numSamples = -1) = 0;
 	
 	String getName() { return name; };
 
@@ -98,7 +97,7 @@ public:
     };
 	~rmpReverb() = default;
 	
-	void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample = 0, int numSamples = -1) override;
+	void applyOn(AudioBuffer<float> &buffer, int startSample = 0, int numSamples = -1) override;
 
 protected:
     void syncParams()
@@ -114,45 +113,37 @@ protected:
 	Reverb reverb; 
 };
 
-class rmpADSR : public rmpEffect, public LockingVoice::Listener {
+class rmpADSR : public rmpEffect, public StartStopBroadcaster::Listener {
 public:
-    rmpADSR(String _name, std::list<LockingVoice *> voices, const double sampleRate = 48000.0f) : rmpEffect(_name)
+    rmpADSR(String _name, const double sampleRate = 48000.0f) : rmpEffect(_name)
     { 
-        for (std::list<LockingVoice *>::iterator it = voices.begin(); it != voices.end(); ++it) 
-        {
-            //adsrs.emplace(*it, ADSR());
-            //adsrs.emplace(*it, false);
-            adsrs[*it].setSampleRate(sampleRate);
-        }
-        
         addParam("attack", 0.1f, 0.0f, 1.0f);
         addParam("decay", 0.5f, 0.0f, 1.0f);
         addParam("sustain", 0.5f, 0.0f, 1.0f);
         addParam("release", 1.0f, 0.0f, 1.0f);
-
     };
 	~rmpADSR() = default;
 
-    void voiceStarted(LockingVoice *voice) override
+    void bcStarted(StartStopBroadcaster &bc) override
     {
-        adsrs[voice].noteOn();
+        adsr.noteOn();
     };
-    bool voiceAskingForRelease(LockingVoice *voice) override
+    bool bcFinishing(StartStopBroadcaster &bc) override
     {
-        if (adsrs[voice].isActive())
+        if (adsr.isActive())
         {
-            adsrs[voice].noteOff();
+            adsr.noteOff();
+            locked = &bc;
             return false;
         }
         else
             return true;
     };
-    void delayedRelease(LockingVoice *voice)
+    void delayedFinish()
     {
-        voice->stopNote(0, true);
+        locked->reactOnDelayedStop();
     }
-
-	void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample = 0, int numSamples = -1) override;
+	void applyOn(AudioBuffer<float> &buffer, int startSample = 0, int numSamples = -1) override;
 
 protected:
     void syncParams()
@@ -162,11 +153,11 @@ protected:
         rparams.decay = getParamValue("decay");
         rparams.sustain = getParamValue("sustain");
         rparams.release = getParamValue("release");
-        for (std::map<LockingVoice *, ADSR>::iterator it = adsrs.begin(); it != adsrs.end(); ++it)
-            it->second.setParameters(rparams);
+        adsr.setParameters(rparams);
     };
-    std::map<LockingVoice *, bool> prevBufferStatuses;
-    std::map<LockingVoice *, ADSR> adsrs;
+    StartStopBroadcaster *locked;
+    bool prevBufferStatus;
+    ADSR adsr;
 };
 
 class rmpVolume : public rmpEffect {
@@ -177,7 +168,7 @@ public:
     };
     ~rmpVolume() = default;
 
-    void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample = 0, int numSamples = -1);
+    void applyOn(AudioBuffer<float> &buffer, int startSample = 0, int numSamples = -1);
 
 protected:
     void syncParams()
@@ -193,7 +184,7 @@ public:
     };
     ~rmpPan() = default;
 
-    void applyOn(AudioBuffer<float> &buffer, LockingVoice *, int startSample, int numSamples);
+    void applyOn(AudioBuffer<float> &buffer, int startSample, int numSamples);
 
 protected:
     void syncParams()
@@ -201,37 +192,74 @@ protected:
     };
 };
 
+class rmpMirrorController : public rmpEffect, public rmpEffect::Listener
+{
+public:
+    rmpMirrorController(String _name, rmpEffect &effect, const double) : rmpEffect(_name)
+    {
+        params = effect.getParams();
+        addParam("broken", 0, 0, 1);
+    };
+    ~rmpMirrorController() = default;
+
+    void linkRack(std::shared_ptr<rmpEffect> rack)
+    {
+        linkedEffects.push_back(rack);
+    }
+    void setSingleParam(String param, float val) override
+    {
+        rmpEffect::setSingleParam(param, val);
+        if (param != "broken")
+        {
+            for (auto it = linkedEffects.begin(); it != linkedEffects.end(); ++it)
+                (*it)->setSingleParam(param, val);
+        }
+    }
+    void EffectParamsChanged(rmpEffect &effect) 
+    {
+        if (params.size() != 1)
+            setSingleParam("broken", 1);
+    };
+
+    void applyOn(AudioBuffer<float> &buffer, int startSample, int numSamples) {};
+
+protected:
+    void syncParams()
+    {
+    };
+    std::list<std::shared_ptr<rmpEffect>> linkedEffects;
+};
+
 class rmpEffectRack : public rmpEffect
 {
 public:
     rmpEffectRack() : rmpEffect("") { };
-    ~rmpEffectRack()
-    {
-        for (std::map<String, rmpEffect *>::iterator effect = rack_list.begin(); effect != rack_list.end(); ++effect)
-            delete(effect->second);
-    };
-    void parseConfig(XmlElement *config, std::list<LockingVoice *> &voices);
+    ~rmpEffectRack() = default;
 
-    void addEffect(String _name, rmpEffect *effect)
+    void addEffect(String _name, std::shared_ptr<rmpEffect> effect)
     {
         rack_list.emplace(_name, effect);
     };
+    int getRackSize()
+    {
+        return rack_list.size();
+    }
     void removeEffect(String _name)
     {
         rack_list.erase(_name);
     };
     
-    void applyOn(AudioBuffer<float> &buffer, LockingVoice *caller, int startSample = 0, int numSamples = -1)
+    void applyOn(AudioBuffer<float> &buffer, int startSample = 0, int numSamples = -1)
     {
-        for (std::map<String, rmpEffect *>::iterator effect = rack_list.begin(); effect != rack_list.end(); ++effect)
-            effect->second->applyOn(buffer, caller, startSample, numSamples);
+        for (auto effect = rack_list.begin(); effect != rack_list.end(); ++effect)
+            effect->second->applyOn(buffer, startSample, numSamples);
     };
 
     rmpEffect *findEffect(String nameSubstring)
     {
-        for (std::map<String, rmpEffect *>::iterator effect = rack_list.begin(); effect != rack_list.end(); ++effect)
+        for (auto effect = rack_list.begin(); effect != rack_list.end(); ++effect)
             if (effect->first.contains(nameSubstring))
-                return effect->second;
+                return effect->second.get();
         return nullptr;
     }
 
@@ -247,7 +275,7 @@ public:
 
 protected:
     void syncParams() {};
-    std::map<String, rmpEffect *> rack_list;
+    std::map<String, std::shared_ptr<rmpEffect>> rack_list;
 };
 
 

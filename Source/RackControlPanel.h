@@ -47,100 +47,100 @@ public:
     ~EffectControlPanel() 
     {
         setLookAndFeel(nullptr);
-        for (std::map<Component *, rmpEffect::valueTuple *>::iterator it = links.begin(); it != links.end(); ++it)
+        for (auto it = links.begin(); it != links.end(); ++it)
             delete(it->first);
     }
 
-    void addRotarySlider(rmpEffect::valueTuple *param, Rectangle<int> bounds, String name, Image)
+    void addRotarySlider(rmpEffect *eff, String param, Rectangle<int> bounds, String name, Image)
     {
         Slider *slider = new Slider(Slider::SliderStyle::RotaryHorizontalVerticalDrag, Slider::TextEntryBoxPosition::NoTextBox);
         slider->setName(name);
         slider->setBounds(bounds);
         addAndMakeVisible(*slider);
-        links.emplace(slider, param);
+        links.emplace(slider, std::pair<rmpEffect *, String>(eff, param));
         slider->addListener(this);
-        if (param)
-            slider->setMinAndMaxValues(std::get<TupleValues::minimalValue>(*param), std::get<TupleValues::maximalValue>(*param));
+        if (eff != nullptr && param != "")
+            slider->setMinAndMaxValues(std::get<TupleValues::minimalValue>(eff->getParams()[param]), std::get<TupleValues::maximalValue>(eff->getParams()[param]));
     }
-    void addHorizontalSlider(rmpEffect::valueTuple *param, Rectangle<int> bounds, String name, Image)
+    void addHorizontalSlider(rmpEffect *eff, String param, Rectangle<int> bounds, String name, Image)
     {
         Slider *slider = new Slider(Slider::SliderStyle::LinearHorizontal, Slider::TextEntryBoxPosition::NoTextBox);
         slider->setName(name);
         slider->setBounds(bounds);
         addAndMakeVisible(*slider);
-        links.emplace(slider, param);
+        links.emplace(slider, std::pair<rmpEffect *, String>(eff, param));
         slider->addListener(this);
-        if (param)
-            slider->setMinAndMaxValues(std::get<TupleValues::minimalValue>(*param), std::get<TupleValues::maximalValue>(*param));
+        if (eff != nullptr && param != "")
+            slider->setMinAndMaxValues(std::get<TupleValues::minimalValue>(eff->getParams()[param]), std::get<TupleValues::maximalValue>(eff->getParams()[param]));
     }
-    void addButton(rmpEffect::valueTuple *param, Rectangle<int> bounds, String name, Image)
+    void addButton(rmpEffect *eff, String param, Rectangle<int> bounds, String name, Image)
     {
         Button *button = new rmpButton();
         button->setName(name);
         button->setBounds(bounds);
         addAndMakeVisible(*button);
-        links.emplace(button, param);
+        links.emplace(button, std::pair<rmpEffect *, String>(eff, param));
         button->addListener(this);
-        if (param)
-            button->setToggleState(std::get<TupleValues::currentValue>(*param) != 0, dontSendNotification);
+        if (eff != nullptr && param != "")
+            button->setToggleState(std::get<TupleValues::currentValue>(eff->getParams()[param]) != 0, dontSendNotification);
     }
-    void setLink(rmpEffect::valueTuple *param, String _componentName)
+    void setLink(rmpEffect *eff, String param, String _componentName)
     {
-        for (std::map<Component *, rmpEffect::valueTuple *>::iterator it = links.begin(); it != links.end(); ++it)
+        for (auto it = links.begin(); it != links.end(); ++it)
             if (it->first->getName() == _componentName)
             {
-                it->second = param;
+                it->second = std::pair<rmpEffect *, String>(eff, param);
 
-                if (param)
+                if (eff != nullptr && param != "")
                 {
                     Slider *ptr_slider = dynamic_cast<Slider *>(it->first);
                     if (ptr_slider)
                     {
                         if (ptr_slider->getSliderStyle() == Slider::SliderStyle::LinearHorizontal)
-                            ptr_slider->setMinAndMaxValues(std::get<TupleValues::minimalValue>(*param), std::get<TupleValues::maximalValue>(*param));
-                        ptr_slider->setValue(std::get<TupleValues::currentValue>(*param)*10);
+                            ptr_slider->setMinAndMaxValues(std::get<TupleValues::minimalValue>(eff->getParams()[param]), std::get<TupleValues::maximalValue>(eff->getParams()[param]));
+                        ptr_slider->setValue(std::get<TupleValues::currentValue>(eff->getParams()[param])*10);
                     }
 
                     Button *ptr_button = dynamic_cast<Button *>(it->first);
                     if (ptr_button)
                     {
-                        ptr_button->setToggleState(std::get<TupleValues::currentValue>(*it->second) != 0, dontSendNotification);
+                        ptr_button->setToggleState(std::get<TupleValues::currentValue>(eff->getParams()[param]) != 0, dontSendNotification);
                     }
                 }
             }
     }
-    void EffectParamsChanged(rmpEffect *) 
+    void EffectParamsChanged(rmpEffect &) 
     {
-        for (std::map<Component *,rmpEffect::valueTuple *>::iterator it = links.begin(); it != links.end(); ++it)
+        for (auto it = links.begin(); it != links.end(); ++it)
         {
             Slider *ptr_slider = dynamic_cast<Slider *>(it->first);
-            if (ptr_slider != nullptr && it->second != nullptr)
-                if (std::get<TupleValues::currentValue>(*it->second) != ptr_slider->getValue())
-                    ptr_slider->setValue(std::get<TupleValues::currentValue>(*it->second));
+            if (ptr_slider != nullptr && it->second.first != nullptr)
+                if (it->second.first->getParamValue(it->second.second) != ptr_slider->getValue())
+                    ptr_slider->setValue(it->second.first->getParamValue(it->second.second));
             
             Button *ptr_button = dynamic_cast<Button *>(it->first);
-            if (ptr_button != nullptr && it->second != nullptr)
-                if ((std::get<TupleValues::currentValue>(*it->second) != 0) ^ ptr_button->getToggleState())
-                    ptr_button->setToggleState(std::get<TupleValues::currentValue>(*it->second) != 0, dontSendNotification);
+            if (ptr_button != nullptr && it->second.first != nullptr)
+                if ((it->second.first->getParamValue(it->second.second) != 0) ^ ptr_button->getToggleState())
+                    ptr_button->setToggleState(it->second.first->getParamValue(it->second.second) != 0, dontSendNotification);
         }
     }
     void buttonClicked(Button *button)
     {
-        if (!links[button])
+        if (!links[button].first)
             return;
         if (button->getToggleState())
-            std::get<TupleValues::currentValue>(*links[button]) = 1.0;
+            links[button].first->setSingleParam(links[button].second, 1.0);
         else
-            std::get<TupleValues::currentValue>(*links[button]) = 0;
+            links[button].first->setSingleParam(links[button].second, 0.0);
     };
     void sliderValueChanged(Slider *slider)
     {
-        if (!links[slider])
+        if (!links[slider].first)
             return;
-        std::get<TupleValues::currentValue>(*links[slider]) = (float)slider->getValue()/10;
+        links[slider].first->setSingleParam(links[slider].second, (float)slider->getValue() / 10);
     };
 	
 protected:
-    std::map<Component *, rmpEffect::valueTuple *> links;
+    std::map<Component *, std::pair<rmpEffect *, String>> links;
     globalEffectRackLookAndFeel lookAndFeel;
 };
