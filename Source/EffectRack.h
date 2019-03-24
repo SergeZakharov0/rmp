@@ -4,6 +4,7 @@
 #include <map>
 #include <unordered_set>
 #include "StartStopBroadcaster.h"
+#include "ADSR.h"
 
 enum TupleValues
 {
@@ -148,7 +149,7 @@ public:
 protected:
     void syncParams()
     {
-        ADSR::Parameters rparams;
+        _ADSR::Parameters rparams;
         rparams.attack = getParamValue("attack");
         rparams.decay = getParamValue("decay");
         rparams.sustain = getParamValue("sustain");
@@ -157,7 +158,7 @@ protected:
     };
     StartStopBroadcaster *locked;
     bool prevBufferStatus;
-    ADSR adsr;
+    _ADSR adsr;
 };
 
 class rmpVolume : public rmpEffect {
