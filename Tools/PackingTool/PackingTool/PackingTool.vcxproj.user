@@ -4,4 +4,8 @@
     <LocalDebuggerCommandArguments>C:\Users\serge\Desktop\simple_pack C:\Users\serge\Desktop\simple_pack.rmp</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommandArguments>C:\Users\serge\Desktop\simple_pack C:\Users\serge\Desktop\simple_pack.rmp</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

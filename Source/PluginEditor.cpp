@@ -44,13 +44,18 @@ rmpAudioProcessorEditor::rmpAudioProcessorEditor(rmpAudioProcessor *p)
     mainPanel.addRotarySlider(nullptr, "",  Rectangle<int>(0, 155, 82, 82), "pan", Image());
     addAndMakeVisible(mainPanel);
 
-    // Reverb Panel Initializaton
+    // ADSR Panel Initializaton
     adsrPanel.addRotarySlider(nullptr, "", Rectangle<int>(66, 18, 82, 82), "attack", Image());
     adsrPanel.addRotarySlider(nullptr, "", Rectangle<int>(191, 18, 82, 82), "decay", Image());
     adsrPanel.addRotarySlider(nullptr, "", Rectangle<int>(66, 170, 82, 82), "sustain", Image());
     adsrPanel.addRotarySlider(nullptr, "", Rectangle<int>(191, 170, 82, 82), "release", Image());
     addAndMakeVisible(adsrPanel);
 
+    // Reverb Panel Initializaton
+    reverbPanel.addRotarySlider(nullptr, "", Rectangle<int>(26, 18, 82, 82), "dryWet", Image());
+    reverbPanel.addRotarySlider(nullptr, "", Rectangle<int>(151, 18, 82, 82), "roomSize", Image());
+    reverbPanel.addRotarySlider(nullptr, "", Rectangle<int>(26, 170, 82, 82), "width", Image());
+    addAndMakeVisible(reverbPanel);
 /*
 
 //  addAndMakeVisible(ReverbPanel );
@@ -137,6 +142,12 @@ void rmpAudioProcessorEditor::attachElements()
     adsrPanel.setLink(sound->rack->findEffect("adsr"), "decay", "decay");
     adsrPanel.setLink(sound->rack->findEffect("adsr"), "sustain", "sustain");
     adsrPanel.setLink(sound->rack->findEffect("adsr"), "release", "release");
+
+    // Link Reverb Panel
+    reverbPanel.setLink(sound->rack->findEffect("reverb"), "dryWet", "dryWet");
+    reverbPanel.setLink(sound->rack->findEffect("reverb"), "roomSize", "roomSize");
+    reverbPanel.setLink(sound->rack->findEffect("reverb"), "width", "width");
+
 }
 
 void rmpAudioProcessorEditor::paint (Graphics&)
@@ -157,4 +168,5 @@ void rmpAudioProcessorEditor::resized()
      LibraryMenu.setBounds(20, 50, 321, 480);
      mainPanel.setBounds(1068, 251, 82, 241);
      adsrPanel.setBounds(322, 233, 300, 317);
+     reverbPanel.setBounds(622, 233, 300, 317);
 }

@@ -18,7 +18,7 @@ int insert_file(const char *db_name, fs::path filepath, fs::path base)
 		return 1;
 	}
 	file.seekg(0, ifstream::end);
-	streampos size = file.tellg();
+	long long int size = file.tellg();
 	file.seekg(0);
 
 	char* buffer = new char[size];
@@ -32,7 +32,7 @@ int insert_file(const char *db_name, fs::path filepath, fs::path base)
 	else {
 		sqlite3_stmt *stmt = NULL;
 		char query[300];
-		sprintf_s(query, "INSERT INTO files VALUES(NULL, '%ls', %d, ?)", fs::relative(filepath, base).c_str(), size);
+		sprintf_s(query, "INSERT INTO files VALUES(NULL, '%ls', %lld, ?)", fs::relative(filepath, base).c_str(), size);
 		
 		rc = sqlite3_prepare_v2(db, query, -1, &stmt, NULL);
 		if (rc != SQLITE_OK) {
