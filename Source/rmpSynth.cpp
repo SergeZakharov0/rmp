@@ -117,24 +117,25 @@ void LayerVoice::renderNextBlock(AudioBuffer<float>& outputBuffer, int startSamp
         if (samplesToCopy <= 0)
             this->noteOff(false);
 
-        AudioBuffer<float> aftereffect(*pure_data);
-        rack->applyOn(aftereffect, currentSamplePosition, samplesToCopy);
+        aftereffect.copyFrom(0, 0, *pure_data, 0, currentSamplePosition, samplesToCopy);
+        aftereffect.copyFrom(1, 0, *pure_data, 1, currentSamplePosition, samplesToCopy);
+        rack->applyOn(aftereffect, 0, samplesToCopy);
 
         if (aftereffect.getNumChannels() > 1 && outputBuffer.getNumChannels() > 1)
         {
-            outputBuffer.addFrom(0, startSample, aftereffect, 0, currentSamplePosition, samplesToCopy);
-            outputBuffer.addFrom(1, startSample, aftereffect, 1, currentSamplePosition, samplesToCopy);
+            outputBuffer.addFrom(0, startSample, aftereffect, 0, 0, samplesToCopy);
+            outputBuffer.addFrom(1, startSample, aftereffect, 1, 0, samplesToCopy);
         }
         else if (aftereffect.getNumChannels() == 1)
         {
-            outputBuffer.addFrom(0, startSample, aftereffect, 0, currentSamplePosition, samplesToCopy);
-            outputBuffer.addFrom(1, startSample, aftereffect, 0, currentSamplePosition, samplesToCopy);
+            outputBuffer.addFrom(0, startSample, aftereffect, 0, 0, samplesToCopy);
+            outputBuffer.addFrom(1, startSample, aftereffect, 0, 0, samplesToCopy);
         }
         else if (outputBuffer.getNumChannels() == 1)
         {
-            aftereffect.applyGain(0, currentSamplePosition, samplesToCopy, 0.5);
-            outputBuffer.addFrom(0, startSample, aftereffect, 0, currentSamplePosition, samplesToCopy);
-            outputBuffer.addFrom(0, startSample, aftereffect, 1, currentSamplePosition, samplesToCopy, 0.5);
+            aftereffect.applyGain(0, 0, samplesToCopy, 0.5);
+            outputBuffer.addFrom(0, startSample, aftereffect, 0, 0, samplesToCopy);
+            outputBuffer.addFrom(0, startSample, aftereffect, 1, 0, samplesToCopy, 0.5);
         }
         currentSamplePosition += samplesToCopy;
     }

@@ -144,7 +144,11 @@ protected:
 class LayerVoice : public rmpVoice
 {
 public:
-    LayerVoice(LayerSound &_sound) : rmpVoice(_sound) {};
+    LayerVoice(LayerSound &_sound) : rmpVoice(_sound) 
+    {
+        aftereffect.setSize(2, 256);
+
+    };
     ~LayerVoice() = default;
     LayerVoice(LayerVoice &) = default;
     LayerVoice(LayerVoice &&) = default;
@@ -162,6 +166,9 @@ public:
     };
 
     std::shared_ptr<rmpEffectRack> rack;
+protected:
+    AudioBuffer<float> aftereffect;
+
 };
 
 class SummedVoice : public rmpVoice
@@ -194,7 +201,11 @@ public:
 class rmpSynth
 {
 public:
-    rmpSynth() = default;
+    rmpSynth()
+    {
+        soundsumBuffer.setSize(2, 256);
+        layersumBuffer.setSize(2, 256);
+    }
     ~rmpSynth() = default;
     rmpSynth(rmpSynth &&) = default;
 
@@ -240,6 +251,9 @@ protected:
     std::list<std::shared_ptr<SummedVoice>> voices;
     std::shared_ptr<SummedSound> sound;
     int lastPitchWheelValues[16];
+
+    AudioBuffer<float> soundsumBuffer;
+    AudioBuffer<float> layersumBuffer;
 
     void renderVoices(AudioBuffer<float>& outputAudio, int startSample, int numSamples);
     SummedVoice* findFreeVoice(int midiChannel, int midiNoteNumber, bool stealIfNoneAvailable);

@@ -193,6 +193,85 @@ protected:
     };
 };
 
+class rmpDelay : public rmpEffect
+{
+public:
+    rmpDelay(String _name, const double _sampleRate) : rmpEffect(_name)
+    {
+        addParam("dryWet", 1, 0, 1);
+        addParam("time", 0.5, 0, 1);
+        addParam("feedback", 0.5, 0, 1);
+
+        sampleRate = _sampleRate;
+        bufferSize = 2 * sampleRate;
+        d_start_l = new float[bufferSize];
+        d_start_r = new float[bufferSize];
+        d_end_l = d_start_l + bufferSize;
+        d_end_r = d_start_r + bufferSize;
+
+        for (int iter = 0; iter < bufferSize; ++iter)
+        {
+            d_start_l[iter] = 0;
+            d_start_r[iter] = 0;
+        }
+
+        timeParam = &std::get<TupleValues::currentValue>(params["time"]);
+        dryWetParam = &std::get<TupleValues::currentValue>(params["dryWet"]);
+        feedbackParam = &std::get<TupleValues::currentValue>(params["feedback"]);
+
+        write_l = d_start_l;
+        write_r = d_start_r;
+        read_l = d_start_l + ((write_l - d_start_l) + ((int)(*timeParam * sampleRate))) % bufferSize;
+        read_r = d_start_r + ((write_r - d_start_r) + ((int)(*timeParam * sampleRate))) % bufferSize;
+    };
+    ~rmpDelay()
+    {
+        delete(d_start_l);
+        delete(d_start_r);
+    }
+
+    void applyOn(AudioBuffer<float> &buffer, int startSample, int numSamples)
+    {
+        float *c_start_l = buffer.getWritePointer(0) + startSample;
+        float *c_start_r = buffer.getWritePointer(1) + startSample;
+       
+        for (int iter = 0; iter < numSamples; ++iter)
+        {
+            *(c_start_l) += *(read_l) * *dryWetParam * *feedbackParam;
+            *(c_start_r) += *(read_r) * *dryWetParam * *feedbackParam;
+            *(write_l) = *(c_start_l);
+            *(write_r) = *(c_start_r);
+
+
+            ++read_l; ++read_r;
+            if (read_l >= d_end_l)
+                read_l = d_start_l;
+            if (read_r >= d_end_r)
+                read_r = d_start_r;
+
+            write_l = d_start_l + ((read_l - d_start_l) + ((int)(*timeParam * sampleRate))) % bufferSize;
+            write_r = d_start_r + ((read_r - d_start_r) + ((int)(*timeParam * sampleRate))) % bufferSize;
+            float a = (write_l - read_l)/sampleRate;
+            int b = read_l - d_start_l;
+            ++c_start_l; ++c_start_r;
+        }
+    };
+protected:
+    float sampleRate;
+    
+    float *d_start_l, *d_start_r;
+    float *d_end_l, *d_end_r;
+    int bufferSize;
+    float *timeParam, *dryWetParam, *feedbackParam;
+
+    float *read_l, *read_r, *write_l, *write_r;
+
+    void syncParams()
+    {
+
+    };
+};
+
 class rmpMirrorController : public rmpEffect, public rmpEffect::Listener
 {
 public:

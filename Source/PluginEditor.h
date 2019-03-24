@@ -37,7 +37,7 @@ private:
     Label masterVolLabel;
     Label panLabel;
 
-    EffectControlPanel mainPanel, layerPanel, reverbPanel, adsrPanel, funcPanel;
+    EffectControlPanel mainPanel, layerPanel, reverbPanel, delayPanel, adsrPanel, funcPanel;
     rmpLibraryMenu     LibraryMenu;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (rmpAudioProcessorEditor)
 };

@@ -56,6 +56,12 @@ rmpAudioProcessorEditor::rmpAudioProcessorEditor(rmpAudioProcessor *p)
     reverbPanel.addRotarySlider(nullptr, "", Rectangle<int>(151, 18, 82, 82), "roomSize", Image());
     reverbPanel.addRotarySlider(nullptr, "", Rectangle<int>(26, 170, 82, 82), "width", Image());
     addAndMakeVisible(reverbPanel);
+
+    // Delay Panel Initializaton
+    delayPanel.addRotarySlider(nullptr, "", Rectangle<int>(151, 170, 82, 82), "dryWet", Image());
+    delayPanel.addRotarySlider(nullptr, "", Rectangle<int>(151, 18, 82, 82), "time", Image());
+    delayPanel.addRotarySlider(nullptr, "", Rectangle<int>(26, 170, 82, 82), "feedback", Image());
+    addAndMakeVisible(delayPanel);
 /*
 
 //  addAndMakeVisible(ReverbPanel );
@@ -148,6 +154,11 @@ void rmpAudioProcessorEditor::attachElements()
     reverbPanel.setLink(sound->rack->findEffect("reverb"), "roomSize", "roomSize");
     reverbPanel.setLink(sound->rack->findEffect("reverb"), "width", "width");
 
+    // Link Delay Panel
+    delayPanel.setLink(sound->rack->findEffect("delay"), "dryWet", "dryWet");
+    delayPanel.setLink(sound->rack->findEffect("delay"), "time", "time");
+    delayPanel.setLink(sound->rack->findEffect("delay"), "feedback", "feedback");
+
 }
 
 void rmpAudioProcessorEditor::paint (Graphics&)
@@ -169,4 +180,5 @@ void rmpAudioProcessorEditor::resized()
      mainPanel.setBounds(1068, 251, 82, 241);
      adsrPanel.setBounds(322, 233, 300, 317);
      reverbPanel.setBounds(622, 233, 300, 317);
+     delayPanel.setBounds(772, 233, 300, 317);
 }

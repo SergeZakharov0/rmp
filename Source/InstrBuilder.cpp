@@ -140,6 +140,15 @@ void InstrBuilder::parseRack(XmlElement *rackConfig, std::shared_ptr<rmpEffectRa
             eff->setSingleParam("width", effect_item->getChildByName("width")->getAllSubText().getFloatValue());
             soundRack->addEffect(_name, eff);
         }
+        if (effect_item->hasTagName("delay"))
+        {
+            String _name = "delay" + String(soundRack->getRackSize() + 1);
+            std::shared_ptr<rmpDelay> eff = std::make_shared<rmpDelay>(_name, hostSampleRate);
+            eff->setSingleParam("dryWet", effect_item->getChildByName("dryWet")->getAllSubText().getFloatValue());
+            eff->setSingleParam("time", effect_item->getChildByName("time")->getAllSubText().getFloatValue());
+            eff->setSingleParam("feedback", effect_item->getChildByName("feedback")->getAllSubText().getFloatValue());
+            soundRack->addEffect(_name, eff);
+        }
         if (effect_item->hasTagName("adsr"))
         {
             String _name = "adsr" + String(soundRack->getRackSize() + 1);
