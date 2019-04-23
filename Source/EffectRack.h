@@ -50,9 +50,11 @@ public:
     };
     virtual void setSingleParam(String param, float val)
     {
+        float prevValue = std::get<TupleValues::currentValue>(params[param]);
         std::get<TupleValues::currentValue>(params[param]) = val;
         syncParams();
-        sentToListeners();
+        if (prevValue != val)
+            sentToListeners();
     };
     Parameters getParams()
     {
@@ -131,7 +133,7 @@ public:
     };
     bool bcFinishing(StartStopBroadcaster &bc) override
     {
-        if (adsr.isActive())
+        if (adsr.isActive() && std::get<TupleValues::currentValue>(params["turnedOn"]) != 0)
         {
             adsr.noteOff();
             locked = &bc;
@@ -143,7 +145,15 @@ public:
     void delayedFinish()
     {
         locked->reactOnDelayedStop();
+        locked = 0;
     }
+    void setSingleParam(String param, float val)
+    {
+        rmpEffect::setSingleParam(param, val);
+        if (param == "turnedOn" && val == 0.0 && locked)
+            delayedFinish();
+    };
+
 	void applyOn(AudioBuffer<float> &buffer, int startSample = 0, int numSamples = -1) override;
 
 protected:
@@ -156,7 +166,7 @@ protected:
         rparams.release = getParamValue("release");
         adsr.setParameters(rparams);
     };
-    StartStopBroadcaster *locked;
+    StartStopBroadcaster *locked = 0;
     bool prevBufferStatus;
     _ADSR adsr;
 };
@@ -232,6 +242,8 @@ public:
 
     void applyOn(AudioBuffer<float> &buffer, int startSample, int numSamples)
     {
+        if (std::get<TupleValues::currentValue>(params["turnedOn"]) == 0)
+            return;
         float *c_start_l = buffer.getWritePointer(0) + startSample;
         float *c_start_r = buffer.getWritePointer(1) + startSample;
        
@@ -272,13 +284,75 @@ protected:
     };
 };
 
+class rmpFunctionalController : public rmpEffect, public rmpEffect::Listener
+{
+public:
+    rmpFunctionalController(String _name, const double) : rmpEffect(_name)
+    {
+        addParam("value", 0, 0, 1);
+    };
+    ~rmpFunctionalController()
+    {
+        for (auto it = linked.begin(); it != linked.end(); ++it)
+            delete(std::get<2>(*it));
+    }
+
+    class Law
+    {
+    public:
+        Law(float _minValue = 0, float _maxValue = 1) { minValue = _minValue; maxValue = _maxValue; };
+        ~Law() = default;
+        virtual float applyLaw(float inp) { return inp * (maxValue - minValue) + minValue; }
+    protected:
+        float minValue, maxValue;
+    };
+
+    class inverseLaw : public Law
+    {
+    public:
+        inverseLaw(float _minValue = 0, float _maxValue = 1) { minValue = _minValue; maxValue = _maxValue; };
+        ~inverseLaw() = default;
+        virtual float applyLaw(float inp) { return maxValue - inp * (maxValue - minValue); }
+    };
+    typedef std::tuple <String, rmpEffect *, rmpFunctionalController::Law *> Parameter;
+
+    void link(Parameter param)
+    {
+        linked.push_back(param);
+        std::get<1>(param)->setSingleParam(std::get<0>(param), std::get<2>(param)->applyLaw(getParamValue("value")));
+        std::get<1>(param)->addListener(this);
+    }
+    void setSingleParam(String param, float val) override
+    {
+        rmpEffect::setSingleParam(param, val);
+        if (getParamValue("turnedOn") != 0)
+        {
+            changedOnce = true;
+            for (auto it = linked.begin(); it != linked.end(); ++it)
+                std::get<1>(*it)->setSingleParam(std::get<0>(*it), std::get<2>(*it)->applyLaw(getParamValue("value")));
+            changedOnce = false;
+        }
+    }
+    void EffectParamsChanged(rmpEffect &effect)
+    {
+    };
+
+    void applyOn(AudioBuffer<float> &buffer, int startSample, int numSamples) {};
+
+protected:
+    void syncParams()
+    {
+    };
+    std::list<Parameter> linked;
+    bool changedOnce = false;
+};
+
 class rmpMirrorController : public rmpEffect, public rmpEffect::Listener
 {
 public:
     rmpMirrorController(String _name, rmpEffect &effect, const double) : rmpEffect(_name)
     {
         params = effect.getParams();
-        addParam("broken", 0, 0, 1);
     };
     ~rmpMirrorController() = default;
 
@@ -289,16 +363,11 @@ public:
     void setSingleParam(String param, float val) override
     {
         rmpEffect::setSingleParam(param, val);
-        if (param != "broken")
-        {
-            for (auto it = linkedEffects.begin(); it != linkedEffects.end(); ++it)
-                (*it)->setSingleParam(param, val);
-        }
+        for (auto it = linkedEffects.begin(); it != linkedEffects.end(); ++it)
+            (*it)->setSingleParam(param, val);
     }
     void EffectParamsChanged(rmpEffect &effect) 
     {
-        if (params.size() != 1)
-            setSingleParam("broken", 1);
     };
 
     void applyOn(AudioBuffer<float> &buffer, int startSample, int numSamples) {};

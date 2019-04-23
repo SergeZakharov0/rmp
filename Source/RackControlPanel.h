@@ -10,39 +10,51 @@
 class globalEffectRackLookAndFeel : public LookAndFeel_V4 {
 public:
     void drawLinearSlider(Graphics &g, int x, int y, int width, int height, float, float, float, const Slider::SliderStyle, Slider &slider) {
-        Image bg = ImageCache::getFromMemory(BinaryData::librarysliderback_png, BinaryData::librarysliderback_pngSize);
+/*        Image bg = ImageCache::getFromMemory(BinaryData::librarysliderback_png, BinaryData::librarysliderback_pngSize);
         g.drawImage(bg, x + width / 4, y, width / 2, height + y, 0, 0, bg.getWidth(), bg.getHeight());
         Image head = ImageCache::getFromMemory(BinaryData::librarysliderhead_png, BinaryData::librarysliderhead_pngSize);
         float percentPos = (float)slider.getValue();
-        g.drawImage(head, x, (int)(y + (1 - percentPos) * (height - head.getHeight() / 2)), width, width, 0, 0, head.getWidth(), head.getHeight());
+        g.drawImage(head, x, (int)(y + (1 - percentPos) * (height - head.getHeight() / 2)), width, width, 0, 0, head.getWidth(), head.getHeight()); */
     };
-
-    void drawRotarySlider(Graphics& g, int, int, int width, int, float sliderPos,
-        const float rotaryStartAngle, const float rotaryEndAngle, Slider&) override
+    void drawToggleButton(Graphics &g, ToggleButton &b, bool, bool)
     {
-        Image im = ImageCache::getFromMemory(BinaryData::knob_png, BinaryData::knob_pngSize);
+        Image buttonactiveimage;
+        if (b.getToggleState())
+            buttonactiveimage = ImageCache::getFromMemory(BinaryData::buttonactive_png, BinaryData::buttonactive_pngSize);
+        else
+            buttonactiveimage = ImageCache::getFromMemory(BinaryData::buttoninactive_png, BinaryData::buttoninactive_pngSize);
+        Rectangle<int> now = b.getBounds();
+        g.drawImage(buttonactiveimage, Rectangle<float>(0, 0, now.getWidth(), now.getHeight()), RectanglePlacement::fillDestination);
+    };
+    void drawRotarySlider(Graphics& g, int, int, int width, int height, float sliderPos,
+        const float rotaryStartAngle, const float rotaryEndAngle, Slider&) override
+    { 
+        Image fixed = ImageCache::getFromMemory(BinaryData::rotarybackground_png, BinaryData::rotarybackground_pngSize);
+        g.drawImage(fixed, Rectangle<float>(0, 0, (float)width, (float)height), RectanglePlacement::fillDestination);
 
-        AffineTransform transform = AffineTransform().rotated((rotaryEndAngle - rotaryStartAngle) * sliderPos + rotaryStartAngle, (float)im.getWidth() / 2, (float)im.getHeight() / 2).scaled((float)width / (float)im.getWidth());
-        g.drawImageTransformed(im, transform);
+        Image pointer = ImageCache::getFromMemory(BinaryData::rotaryhead_png, BinaryData::rotaryhead_pngSize);
+        AffineTransform transform = AffineTransform().rotated((rotaryEndAngle - rotaryStartAngle) * sliderPos + rotaryStartAngle, (float)pointer.getWidth() / 2, (float)pointer.getHeight() / 2).scaled((float)width / (float)pointer.getWidth());
+        g.drawImageTransformed(pointer, transform);
     }
 
 };
 
-
-class rmpButton : public Button 
+class rmpButton : public ToggleButton
 {
 public:
-    rmpButton() : Button("") {};
-protected:
-    void paintButton(Graphics &, bool, bool) {};
+    rmpButton(String _name = "") : ToggleButton(_name) {};
+    void clicked() override 
+    {
+    }
 };
 
-class EffectControlPanel : public Component, public rmpEffect::Listener, public Button::Listener, public Slider::Listener
+class EffectControlPanel : public Component, public rmpEffect::Listener, public ToggleButton::Listener, public Slider::Listener
 {
 public:
     EffectControlPanel()
     {
         setLookAndFeel(&lookAndFeel);
+        setPaintingIsUnclipped(true);
     }
     ~EffectControlPanel() 
     {
@@ -70,19 +82,27 @@ public:
         addAndMakeVisible(*slider);
         links.emplace(slider, std::pair<rmpEffect *, String>(eff, param));
         slider->addListener(this);
+        
         if (eff != nullptr && param != "")
+        {
             slider->setMinAndMaxValues(std::get<TupleValues::minimalValue>(eff->getParams()[param]), std::get<TupleValues::maximalValue>(eff->getParams()[param]));
+            eff->addListener(this);
+        }
     }
     void addButton(rmpEffect *eff, String param, Rectangle<int> bounds, String name, Image)
     {
-        Button *button = new rmpButton();
+        ToggleButton *button = new rmpButton("");
         button->setName(name);
         button->setBounds(bounds);
+        button->setPaintingIsUnclipped(true);
         addAndMakeVisible(*button);
         links.emplace(button, std::pair<rmpEffect *, String>(eff, param));
         button->addListener(this);
         if (eff != nullptr && param != "")
+        {
             button->setToggleState(std::get<TupleValues::currentValue>(eff->getParams()[param]) != 0, dontSendNotification);
+            eff->addListener(this);
+        }
     }
     void setLink(rmpEffect *eff, String param, String _componentName)
     {
@@ -99,12 +119,14 @@ public:
                         if (ptr_slider->getSliderStyle() == Slider::SliderStyle::LinearHorizontal)
                             ptr_slider->setMinAndMaxValues(std::get<TupleValues::minimalValue>(eff->getParams()[param]), std::get<TupleValues::maximalValue>(eff->getParams()[param]));
                         ptr_slider->setValue(std::get<TupleValues::currentValue>(eff->getParams()[param])*10);
+                        eff->addListener(this);
                     }
 
-                    Button *ptr_button = dynamic_cast<Button *>(it->first);
+                    rmpButton *ptr_button = dynamic_cast<rmpButton *>(it->first);
                     if (ptr_button)
                     {
                         ptr_button->setToggleState(std::get<TupleValues::currentValue>(eff->getParams()[param]) != 0, dontSendNotification);
+                        eff->addListener(this);
                     }
                 }
             }
@@ -116,9 +138,12 @@ public:
             Slider *ptr_slider = dynamic_cast<Slider *>(it->first);
             if (ptr_slider != nullptr && it->second.first != nullptr)
                 if (it->second.first->getParamValue(it->second.second) != ptr_slider->getValue())
-                    ptr_slider->setValue(it->second.first->getParamValue(it->second.second));
+                {
+                    float now = it->second.first->getParamValue(it->second.second);
+                    ptr_slider->setValue(now*10);
+                }
             
-            Button *ptr_button = dynamic_cast<Button *>(it->first);
+            rmpButton *ptr_button = dynamic_cast<rmpButton *>(it->first);
             if (ptr_button != nullptr && it->second.first != nullptr)
                 if ((it->second.first->getParamValue(it->second.second) != 0) ^ ptr_button->getToggleState())
                     ptr_button->setToggleState(it->second.first->getParamValue(it->second.second) != 0, dontSendNotification);

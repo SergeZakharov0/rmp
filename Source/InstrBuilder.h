@@ -5,6 +5,7 @@
 #include "rmpSynth.h"
 #include "EffectRack.h"
 #include "SQLInputSource.h"
+#include <vector>
 
 class InstrBuilder
 {
@@ -20,7 +21,7 @@ public:
     rmpSynth *parseInstr(int numberOfVoicesToCreate);
 protected:
     void parseLayer(XmlElement *layerConfig, std::shared_ptr<LayerSound> lsound, std::list<std::shared_ptr<LayerVoice>> lvoices);
-    void parseRack(XmlElement *rackConfig, std::shared_ptr<rmpEffectRack> soundRack, std::list<std::shared_ptr<rmpEffectRack>> voiceRacks);
+    void parseRack(XmlElement *rackConfig, std::shared_ptr<rmpEffectRack> soundRack, std::list<std::shared_ptr<rmpEffectRack>> voiceRacks, std::vector<rmpEffectRack *> subRacks = std::vector<rmpEffectRack *>());
 private:
     XmlElement *instrConfig;
     SQLInputSource *source;

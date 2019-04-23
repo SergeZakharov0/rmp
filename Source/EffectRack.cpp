@@ -24,12 +24,13 @@ void rmpReverb::applyOn(AudioBuffer<float> &buffer, int startSample, int numSamp
 
 void rmpADSR::applyOn(AudioBuffer<float> &buffer, int startSample, int numSamples)
 {
-    if (std::get<TupleValues::currentValue>(params["turnedOn"]) == 0)
-        return;
 
     if (prevBufferStatus == true && !adsr.isActive())
         delayedFinish();
     prevBufferStatus = adsr.isActive();
+
+    if (std::get<TupleValues::currentValue>(params["turnedOn"]) == 0)
+        return;
 
     adsr.applyEnvelopeToBuffer(buffer, startSample, numSamples);
 }

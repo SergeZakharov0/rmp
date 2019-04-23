@@ -40,8 +40,13 @@ rmpSynth *InstrBuilder::parseInstr(int numberOfVoicesToCreate)
             for (int i = 0; i < (voices.size() * sound->layerSounds.size()); ++i)
                 voiceRacks.push_back(std::make_shared<rmpEffectRack>());
             
+            // Find all subracks
+            std::vector<rmpEffectRack *> subRacks;
+            for (auto it = sound->layerSounds.begin(); it != sound->layerSounds.end(); ++it)
+                subRacks.push_back((*it)->rack.get());
+
             // Parsing
-            parseRack(instr_item, soundRack, voiceRacks);
+            parseRack(instr_item, soundRack, voiceRacks, subRacks);
             
             // Attaching
             sound->rack = soundRack;
@@ -113,7 +118,7 @@ void InstrBuilder::parseLayer(XmlElement *layerConfig, std::shared_ptr<LayerSoun
     }
 }
 
-void InstrBuilder::parseRack(XmlElement *rackConfig, std::shared_ptr<rmpEffectRack> soundRack, std::list<std::shared_ptr<rmpEffectRack>> voiceRacks)
+void InstrBuilder::parseRack(XmlElement *rackConfig, std::shared_ptr<rmpEffectRack> soundRack, std::list<std::shared_ptr<rmpEffectRack>> voiceRacks, std::vector<rmpEffectRack *> subRacks)
 {
     forEachXmlChildElement(*rackConfig, effect_item)
     {
@@ -172,6 +177,53 @@ void InstrBuilder::parseRack(XmlElement *rackConfig, std::shared_ptr<rmpEffectRa
             {
                 rackit->get()->addEffect(_name, *effit);
             }
+        }
+        if (effect_item->hasTagName("func"))
+        {
+            String _name = "func" + String(soundRack->getRackSize() + 1);
+
+            std::shared_ptr<rmpFunctionalController> contr = std::make_shared<rmpFunctionalController>(_name, hostSampleRate);
+            forEachXmlChildElementWithTagName(*effect_item, link_item, "link")
+            {
+                rmpEffectRack * subRack = 0;
+                rmpEffect *effect = 0;
+                String name = "";
+                rmpFunctionalController::Law *law = 0;
+                forEachXmlChildElement(*link_item, param_item)
+                {
+                    if (param_item->hasTagName("layer"))
+                    {
+                        int value = param_item->getAllSubText().getIntValue();
+                        if (value <= 0)
+                            subRack = soundRack.get();
+                        else
+                            if (value <= subRacks.size())
+                                subRack = subRacks[value - 1];
+                            else
+                                throw;
+                    }
+                    if (param_item->hasTagName("namepart"))
+                    {
+                        effect = subRack->findEffect(param_item->getAllSubText());
+                    }
+                    if (param_item->hasTagName("paramname"))
+                    {
+                        name = param_item->getAllSubText();
+                    }
+                    if (param_item->hasTagName("law"))
+                    {
+                        String lawName = param_item->getAllSubText();;
+                        if (lawName == "default")
+                            law = new rmpFunctionalController::Law();
+                        if (lawName == "inverse")
+                            law = new rmpFunctionalController::inverseLaw();
+                    }
+                }
+                contr->link(rmpFunctionalController::Parameter(name, effect, law));
+            }
+            contr->setSingleParam("value", effect_item->getChildByName("value")->getAllSubText().getFloatValue());
+            soundRack->addEffect(_name, contr);
+            
         }
     }
 }

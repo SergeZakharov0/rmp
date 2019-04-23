@@ -244,8 +244,8 @@ public:
         subBlockSubdivisionIsStrict = shouldBeStrict;
     }
 
-protected:
     CriticalSection lock;
+protected:
 
     friend class InstrBuilder;
     std::list<std::shared_ptr<SummedVoice>> voices;

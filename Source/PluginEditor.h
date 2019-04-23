@@ -8,6 +8,21 @@
 
 class rmpAudioProcessor;
 
+class rmpKeyboard : public MidiKeyboardComponent
+{
+public:
+    rmpKeyboard() = default;
+    rmpKeyboard(MidiKeyboardState &state, MidiKeyboardComponent::Orientation orient) : MidiKeyboardComponent(state, orient) 
+    {
+        setColour(ColourIds::mouseOverKeyOverlayColourId, Colour((uint8)150, (uint8)150, (uint8)150, (uint8)128));
+        setColour(ColourIds::keyDownOverlayColourId, Colour((uint8)90, (uint8)90, (uint8)90, (uint8)128));
+    };
+    void focusLost(FocusChangeType) override
+    {
+        grabKeyboardFocus();
+    };
+};
+
 class rmpAudioProcessorEditor  : public AudioProcessorEditor, public rmpLibraryMenu::Listener
 {
 public:
@@ -24,12 +39,12 @@ public:
 private:
     rmpAudioProcessor *processor;
     
-	ImageComponent bgimage;
-	ImageComponent logoimage;
-	ImageComponent gridimage;
+	ImageComponent bgimage, logoimage, gridimage;
+    ImageComponent volumetext, pantext, envelopetext, attacktext, sustaintext, releasetext, decaytext, reverbtext, widthtext,
+        dampingtext, reverbheadtext, delaytext, delayheadtext, feedbacktext, timetext, libraryback;
 
     MidiKeyboardState& keyboardState;
-    MidiKeyboardComponent keyboardComponent  { keyboardState, MidiKeyboardComponent::horizontalKeyboard};
+    rmpKeyboard keyboardComponent  { keyboardState, MidiKeyboardComponent::horizontalKeyboard};
     
     Slider masterVolSlider;
 	Slider librarySlider;
@@ -37,7 +52,7 @@ private:
     Label masterVolLabel;
     Label panLabel;
 
-    EffectControlPanel mainPanel, layerPanel, reverbPanel, delayPanel, adsrPanel, funcPanel;
+    EffectControlPanel mainPanel, layerPanel, reverbdelayPanel, adsrPanel, funcPanel;
     rmpLibraryMenu     LibraryMenu;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (rmpAudioProcessorEditor)
 };

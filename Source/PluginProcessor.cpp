@@ -35,13 +35,14 @@ void rmpAudioProcessor::reloadSynth()
 {
     if (currentConfigName == "")
         return;
-
+        
     if (synth)
+    {
+        synth->lock.enter();
         delete(synth);
-
+    }
     InstrBuilder builder(currentConfig, currentSource, sampleRate);
     synth = builder.parseInstr(4);
-
 }
 
 void rmpAudioProcessor::prepareToPlay (double newRate, int samplesPerBlock)

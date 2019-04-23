@@ -5,33 +5,56 @@
               pluginVST3Category="Instrument,Sampler">
   <MAINGROUP id="LC6Y1T" name="rmp">
     <GROUP id="{C735F908-F355-F96A-D27B-A385D1649572}" name="Images">
-      <FILE id="lLgcyq" name="background.png" compile="0" resource="1" file="Images/background.png"/>
-      <FILE id="xsVtE0" name="folder_active.png" compile="0" resource="1"
+      <FILE id="sSWn3N" name="attacktext.png" compile="0" resource="1" file="Images/attacktext.png"/>
+      <FILE id="FBIx8k" name="background.png" compile="0" resource="1" file="Images/background.png"/>
+      <FILE id="zA2POq" name="buttonactive.png" compile="0" resource="1"
+            file="Images/buttonactive.png"/>
+      <FILE id="BWK6Uy" name="buttoninactive.png" compile="0" resource="1"
+            file="Images/buttoninactive.png"/>
+      <FILE id="IZEMTC" name="dampingtext.png" compile="0" resource="1" file="Images/dampingtext.png"/>
+      <FILE id="xQeWmy" name="decaytext.png" compile="0" resource="1" file="Images/decaytext.png"/>
+      <FILE id="wKZFKA" name="delayheadtext.png" compile="0" resource="1"
+            file="Images/delayheadtext.png"/>
+      <FILE id="bMwlEc" name="delaytext.png" compile="0" resource="1" file="Images/delaytext.png"/>
+      <FILE id="VZHiRg" name="envelopetext.png" compile="0" resource="1"
+            file="Images/envelopetext.png"/>
+      <FILE id="AJnxnw" name="feedbacktext.png" compile="0" resource="1"
+            file="Images/feedbacktext.png"/>
+      <FILE id="vPVFav" name="folder_active.png" compile="0" resource="1"
             file="Images/folder_active.png"/>
-      <FILE id="GsFdMw" name="folder_inactive.png" compile="0" resource="1"
+      <FILE id="MHP9iv" name="folder_inactive.png" compile="0" resource="1"
             file="Images/folder_inactive.png"/>
-      <FILE id="H3AfEc" name="grid.png" compile="0" resource="1" file="Images/grid.png"/>
-      <FILE id="QOrz0a" name="hyperia.png" compile="0" resource="1" file="Images/hyperia.png"/>
-      <FILE id="hTMzCB" name="instrument.png" compile="0" resource="1" file="Images/instrument.png"/>
-      <FILE id="ZfAOaU" name="knob.png" compile="0" resource="1" file="Images/knob.png"/>
-      <FILE id="kREKPR" name="libraryback_greyfull.png" compile="0" resource="1"
+      <FILE id="Wza9aW" name="func1text.png" compile="0" resource="1" file="Images/func1text.png"/>
+      <FILE id="ZNDPli" name="grid.png" compile="0" resource="1" file="Images/grid.png"/>
+      <FILE id="wUzDeF" name="hyperia.png" compile="0" resource="1" file="Images/hyperia.png"/>
+      <FILE id="mTJLc8" name="instrument.png" compile="0" resource="1" file="Images/instrument.png"/>
+      <FILE id="XrzP5c" name="libraryback.png" compile="0" resource="1" file="Images/libraryback.png"/>
+      <FILE id="gcohNi" name="libraryback_greyfull.png" compile="0" resource="1"
             file="Images/libraryback_greyfull.png"/>
-      <FILE id="rcvxiu" name="libraryback_pack.png" compile="0" resource="1"
+      <FILE id="nC4smx" name="libraryback_pack.png" compile="0" resource="1"
             file="Images/libraryback_pack.png"/>
-      <FILE id="XiWhs2" name="librarybackground.png" compile="0" resource="1"
-            file="Images/librarybackground.png"/>
-      <FILE id="iBEXc3" name="librarysliderback.png" compile="0" resource="1"
-            file="Images/librarysliderback.png"/>
-      <FILE id="vqTyqk" name="librarysliderhead.png" compile="0" resource="1"
-            file="Images/librarysliderhead.png"/>
-      <FILE id="uSThZi" name="offButton.png" compile="0" resource="1" file="Images/offButton.png"/>
-      <FILE id="AtOmoB" name="onButton.png" compile="0" resource="1" file="Images/onButton.png"/>
+      <FILE id="p44lJ4" name="pantext.png" compile="0" resource="1" file="Images/pantext.png"/>
+      <FILE id="UxUKKV" name="releasetext.png" compile="0" resource="1" file="Images/releasetext.png"/>
+      <FILE id="C4hBUK" name="reverbheadtext.png" compile="0" resource="1"
+            file="Images/reverbheadtext.png"/>
+      <FILE id="q2JCoj" name="reverbtext.png" compile="0" resource="1" file="Images/reverbtext.png"/>
+      <FILE id="DohNr1" name="rotarybackground.png" compile="0" resource="1"
+            file="Images/rotarybackground.png"/>
+      <FILE id="WH4z7D" name="rotaryhead.png" compile="0" resource="1" file="Images/rotaryhead.png"/>
+      <FILE id="WtOKwf" name="sliderbody.png" compile="0" resource="1" file="Images/sliderbody.png"/>
+      <FILE id="QR67SE" name="sliderhead.png" compile="0" resource="1" file="Images/sliderhead.png"/>
+      <FILE id="STnRYr" name="sustaintext.png" compile="0" resource="1" file="Images/sustaintext.png"/>
+      <FILE id="hvaOIF" name="timetext.png" compile="0" resource="1" file="Images/timetext.png"/>
+      <FILE id="SN3Ipx" name="volumetext.png" compile="0" resource="1" file="Images/volumetext.png"/>
+      <FILE id="GhvGzN" name="widthtext.png" compile="0" resource="1" file="Images/widthtext.png"/>
     </GROUP>
     <GROUP id="{DA3FF88B-B5C4-E6FE-8EF4-E8B1E8980DA6}" name="SQLite">
       <FILE id="YSJ4Mm" name="sqlite3.c" compile="1" resource="0" file="Source/SQLite/sqlite3.c"/>
       <FILE id="qAgaNS" name="sqlite3.h" compile="0" resource="0" file="Source/SQLite/sqlite3.h"/>
     </GROUP>
     <GROUP id="{B5EA1DE6-5C6A-3053-6A75-227C1B25F6BE}" name="Source">
+      <FILE id="zsTEdQ" name="AudioBuffer.cpp" compile="1" resource="0" file="Source/AudioBuffer.cpp"/>
+      <FILE id="ACUCcv" name="AudioBuffer.h" compile="0" resource="0" file="Source/AudioBuffer.h"/>
       <FILE id="tg4Aao" name="ADSR.h" compile="0" resource="0" file="Source/ADSR.h"/>
       <FILE id="W6E8Wy" name="StartStopBroadcaster.h" compile="0" resource="0"
             file="Source/StartStopBroadcaster.h"/>
