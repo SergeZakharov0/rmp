@@ -130,10 +130,6 @@ void PitchShifter::shiftTone(const float * in_buff_ptr, float * out_buff_ptr, fl
 
 void PitchShifter::lazyShiftTone(const float * in_buff_ptr, float * out_buff_ptr, float semitone_val)
 {
-    resultSize = _resultSize;
-	FILE *debug = fopen("info.txt", "a+");
-	fprintf(debug,"%f: %d\n", ((float)_resultSize) / (1024 * 1024), (int) semitone_val);
-	fclose(debug);
     changeSpeed(in_buff_ptr, out_buff_ptr, _factor);
 }
 

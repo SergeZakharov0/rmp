@@ -167,6 +167,11 @@ rmpAudioProcessorEditor::rmpAudioProcessorEditor(rmpAudioProcessor *p)
     funcPanel.addButton(nullptr, "", Rectangle<int>(1090 * resizeCoeff, 115 * resizeCoeff, buttonactiveimage.getWidth() * resizeCoeff, buttonactiveimage.getHeight() * resizeCoeff), "func5OnOff", Image());
     addAndMakeVisible(funcPanel);
     funcPanel.setBounds(675 * resizeCoeff, 135 * resizeCoeff, 1277 * resizeCoeff, 171 * resizeCoeff);
+
+    if (processor->getSynth())
+        if (processor->getSynth()->getSound())
+            attachElements();
+
 }
 
 rmpAudioProcessorEditor::~rmpAudioProcessorEditor()
