@@ -10,7 +10,7 @@ class PitchShifter
 	    std::shared_ptr<AudioBuffer<float>> transposeBuffer(std::shared_ptr<AudioBuffer<float> > Input, int diffNote);
 	
         void lazyShiftTone(const float * in_buff_ptr, float * out_buff_ptr, float semitone_val);
-        
+        void splineShiftTone(const float * in_buff_ptr, float * out_buff_ptr, float semitone_val, int outputSamples);
 	private:
 	    void stretch(const float *in_buff_ptr, float *result, float r_factor);
 	    void changeSpeed(const float *result, float * out_buff_ptr, float factor);

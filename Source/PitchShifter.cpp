@@ -134,6 +134,12 @@ void PitchShifter::lazyShiftTone(const float * in_buff_ptr, float * out_buff_ptr
 }
 
 
+void PitchShifter::splineShiftTone(const float * in_buff_ptr, float * out_buff_ptr, float semitone_val, int outputSamples)
+{
+    CatmullRomInterpolator interpolator;
+    interpolator.process((double)semitone_val, in_buff_ptr, out_buff_ptr, outputSamples);
+}
+
 std::shared_ptr<AudioBuffer<float>> PitchShifter::transposeBuffer(std::shared_ptr<AudioBuffer<float> > Input, int diffNote)
 {
 
@@ -150,7 +156,7 @@ std::shared_ptr<AudioBuffer<float>> PitchShifter::transposeBuffer(std::shared_pt
     const float * in_buff_ptr[2] = {input_buffer->getReadPointer(0), input_buffer->getReadPointer(1) };   
           float *out_buff_ptr[2] = { out_buffer->getWritePointer(0), out_buffer->getWritePointer(1) };
 
-    lazyShiftTone(in_buff_ptr[0], out_buff_ptr[0], diffNote);
-    lazyShiftTone(in_buff_ptr[1], out_buff_ptr[1], diffNote);
+    splineShiftTone(in_buff_ptr[0], out_buff_ptr[0], _factor, _resultSize);
+    splineShiftTone(in_buff_ptr[1], out_buff_ptr[1], _factor, _resultSize);
     return Output;
 }

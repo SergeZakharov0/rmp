@@ -6,7 +6,7 @@ rmpAudioProcessor::rmpAudioProcessor() : AudioProcessor (BusesProperties().withO
 {
     numSamples = 0;
 	
-	File datafile = File::getCurrentWorkingDirectory().getChildFile(".rmpdata");
+	File datafile = File::getSpecialLocation(File::userHomeDirectory).getChildFile("hyperia.data");
 	if (!datafile.getSize()) {
 		FileChooser myChooser("The rompler was not correctly installed. Please specify the library folder",
 			File::getSpecialLocation(File::userHomeDirectory));

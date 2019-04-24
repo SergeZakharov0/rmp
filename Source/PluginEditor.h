@@ -14,6 +14,7 @@ public:
     rmpKeyboard() = default;
     rmpKeyboard(MidiKeyboardState &state, MidiKeyboardComponent::Orientation orient) : MidiKeyboardComponent(state, orient) 
     {
+        clearKeyMappings();
         setColour(ColourIds::mouseOverKeyOverlayColourId, Colour((uint8)150, (uint8)150, (uint8)150, (uint8)128));
         setColour(ColourIds::keyDownOverlayColourId, Colour((uint8)90, (uint8)90, (uint8)90, (uint8)128));
     };
