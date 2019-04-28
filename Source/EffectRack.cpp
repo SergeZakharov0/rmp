@@ -16,10 +16,10 @@ void rmpReverb::applyOn(AudioBuffer<float> &buffer, int startSample, int numSamp
     float *l_channel = buffer.getWritePointer(0, startSample);
     float *r_channel = (numChannels > 1) ? buffer.getWritePointer(1, startSample) : 0;
 
-	if (numChannels == 1)
-		reverb.processMono(l_channel, numSamples);
-	else if (numChannels == 2)
-		reverb.processStereo(l_channel, r_channel, numSamples);
+	float* input[2] = { l_channel , r_channel };
+	
+	mreverb.process(input, input, numSamples);
+
 }
 
 void rmpADSR::applyOn(AudioBuffer<float> &buffer, int startSample, int numSamples)

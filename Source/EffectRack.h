@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include "StartStopBroadcaster.h"
 #include "ADSR.h"
+#include "MVerb.h"
 
 enum TupleValues
 {
@@ -93,10 +94,18 @@ class rmpReverb : public rmpEffect
 public:
 	rmpReverb(String _name, const double sampleRate = 48000.0f) : rmpEffect(_name)
     {
-        reverb.setSampleRate(sampleRate);
-        addParam("dryWet", 0.5, 0, 1);
-        addParam("roomSize", 0.5, 0, 1);
-        addParam("width", 0.5, 0, 1);
+
+		mreverb.setSampleRate(sampleRate);
+		mreverb.setParameter(MVerb<float>::DAMPINGFREQ, 0.9);
+		mreverb.setParameter(MVerb<float>::DENSITY, 0.5);
+		mreverb.setParameter(MVerb<float>::BANDWIDTHFREQ, 0.1);
+		mreverb.setParameter(MVerb<float>::DECAY, 0.5);
+		mreverb.setParameter(MVerb<float>::PREDELAY, 0.);
+		mreverb.setParameter(MVerb<float>::SIZE, 0.5);
+		mreverb.setParameter(MVerb<float>::GAIN, 1.);
+		mreverb.setParameter(MVerb<float>::MIX, 0.5);
+		mreverb.setParameter(MVerb<float>::EARLYMIX, 0.75);
+
     };
 	~rmpReverb() = default;
 	
@@ -105,15 +114,12 @@ public:
 protected:
     void syncParams()
     {
-        Reverb::Parameters rparams;
-        rparams.dryLevel = 1.0f - getParamValue("dryWet");
-        rparams.wetLevel = getParamValue("dryWet");
-        rparams.roomSize = getParamValue("roomSize");
-        rparams.width = getParamValue("width");
-        reverb.setParameters(rparams);
+		mreverb.setParameter(MVerb<float>::MIX, getParamValue("dryWet"));
+		mreverb.setParameter(MVerb<float>::SIZE, getParamValue("roomSize"));
+		mreverb.setParameter(MVerb<float>::DENSITY, getParamValue("width"));
+ 
     };
-
-	Reverb reverb; 
+	MVerb<float> mreverb;
 };
 
 class rmpADSR : public rmpEffect, public StartStopBroadcaster::Listener {
