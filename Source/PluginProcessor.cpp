@@ -26,6 +26,10 @@ void rmpAudioProcessor::applyInstrumentConfig(String configName, XmlElement *con
         return;
 
 	currentConfigName = configName;
+    if (currentConfig)
+        delete(currentConfig);
+    if (currentSource)
+        delete(currentSource);
     currentConfig = config;
     currentSource = source;
     reloadSynth();
@@ -38,11 +42,13 @@ void rmpAudioProcessor::reloadSynth()
         
     if (synth)
     {
-        synth->lock.enter();
-        delete(synth);
+        synth->turnOff();
+        if (prevSynth)
+            delete(prevSynth);
+        prevSynth = synth;
     }
     InstrBuilder builder(currentConfig, currentSource, sampleRate);
-    synth = builder.parseInstr(4);
+    synth = builder.parseInstr(4, lock);
 }
 
 void rmpAudioProcessor::prepareToPlay (double newRate, int samplesPerBlock)
@@ -65,6 +71,8 @@ void rmpAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mi
     keyboardState.processNextMidiBuffer (midiMessages, 0, numSamples, true);
     if (synth)
         synth->renderNextBlock(buffer, midiMessages, 0, numSamples);
+
+    midiMessages.clear();
 }
 
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()

@@ -224,4 +224,5 @@ void rmpAudioProcessorEditor::paint (Graphics&)
 
 void rmpAudioProcessorEditor::resized()
 {
+
 }

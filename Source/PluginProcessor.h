@@ -10,7 +10,17 @@ class rmpAudioProcessor  : public AudioProcessor
 {
 public:
     rmpAudioProcessor();
-    ~rmpAudioProcessor() = default;
+    ~rmpAudioProcessor() 
+    { 
+        if (synth) 
+            delete(synth); 
+        if (prevSynth) 
+            delete(prevSynth); 
+        if (currentConfig)
+            delete(currentConfig);
+        if (currentSource)
+            delete(currentSource);
+    };
     
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void applyInstrumentConfig(String configName, XmlElement *config, SQLInputSource *source);
@@ -45,6 +55,7 @@ public:
 
     MidiKeyboardState& getKBState() { return keyboardState; };
     rmpSynth* getSynth() { return synth; };
+    void reset() { if (synth) synth->reset(); };
 
 	String libraryPath;
 
@@ -52,7 +63,9 @@ public:
     XmlElement *currentConfig = nullptr; 
     SQLInputSource *currentSource = nullptr;
 private:
-    rmpSynth *synth = nullptr;
+    CriticalSection lock;
+    rmpSynth *synth = nullptr, *prevSynth = nullptr;
+
     float sampleRate = 0;
     int numSamples = 0;
     MidiKeyboardState keyboardState;

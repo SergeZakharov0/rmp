@@ -18,10 +18,6 @@ public:
         setColour(ColourIds::mouseOverKeyOverlayColourId, Colour((uint8)150, (uint8)150, (uint8)150, (uint8)128));
         setColour(ColourIds::keyDownOverlayColourId, Colour((uint8)90, (uint8)90, (uint8)90, (uint8)128));
     };
-    void focusLost(FocusChangeType) override
-    {
-        grabKeyboardFocus();
-    };
 };
 
 class rmpAudioProcessorEditor  : public AudioProcessorEditor, public rmpLibraryMenu::Listener
@@ -39,7 +35,8 @@ public:
     
 private:
     rmpAudioProcessor *processor;
-    
+    Rectangle<int> prev_bounds;
+
 	ImageComponent bgimage, logoimage, gridimage;
     ImageComponent volumetext, pantext, envelopetext, attacktext, sustaintext, releasetext, decaytext, reverbtext, widthtext,
         dampingtext, reverbheadtext, delaytext, delayheadtext, feedbacktext, timetext, libraryback;

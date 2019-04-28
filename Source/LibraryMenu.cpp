@@ -119,12 +119,11 @@ void rmpInstrumentMenuItem::itemClicked(const MouseEvent &) {
     else 
     {
         menu->selectedItemName = name;
-        SQLInputSource dbsource(instr_path, db_path);
-        MemoryInputStream *stream = (MemoryInputStream *)dbsource.createInputStream();
+        SQLInputSource *dbsource = new SQLInputSource(instr_path, db_path);
+        MemoryInputStream *stream = (MemoryInputStream *)dbsource->createInputStream();
         char *data = (char *)stream->getData();
         XmlElement *ex = new XmlElement(*parseXML(String(CharPointer_UTF8(data))));
-        static_cast<rmpLibraryMenu *>(this->getOwnerView())->listener->instrumentSelected(name, ex, &dbsource);
-        delete ex;
+        static_cast<rmpLibraryMenu *>(this->getOwnerView())->listener->instrumentSelected(name, ex, dbsource);
         delete stream;
     }
 

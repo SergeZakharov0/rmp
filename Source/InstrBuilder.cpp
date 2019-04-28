@@ -2,9 +2,9 @@
 #include "InstrBuilder.h"
 #include <memory>
 
-rmpSynth *InstrBuilder::parseInstr(int numberOfVoicesToCreate)
+rmpSynth *InstrBuilder::parseInstr(int numberOfVoicesToCreate, CriticalSection &_lock)
 {
-    rmpSynth *synth = new rmpSynth();
+    rmpSynth *synth = new rmpSynth(_lock);
     std::shared_ptr<SummedSound> sound = std::make_shared<SummedSound>();
     synth->sound = sound;
     std::list<std::shared_ptr<SummedVoice>> &voices = synth->voices;
