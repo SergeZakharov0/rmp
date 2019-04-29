@@ -18,7 +18,7 @@ public:
     }
     ~InstrBuilder() = default;
 
-    rmpSynth *parseInstr(int numberOfVoicesToCreate);
+    rmpSynth *parseInstr(int numberOfVoicesToCreate, CriticalSection &_lock);
 protected:
     void parseLayer(XmlElement *layerConfig, std::shared_ptr<LayerSound> lsound, std::list<std::shared_ptr<LayerVoice>> lvoices);
     void parseRack(XmlElement *rackConfig, std::shared_ptr<rmpEffectRack> soundRack, std::list<std::shared_ptr<rmpEffectRack>> voiceRacks, std::vector<rmpEffectRack *> subRacks = std::vector<rmpEffectRack *>());

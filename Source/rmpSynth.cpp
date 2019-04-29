@@ -226,8 +226,15 @@ void rmpSynth::reset()
         voice->get()->noteOff(true);
 }
 
+void rmpSynth::turnOff()
+{
+    turnedOff = 0;
+}
+
 void rmpSynth::renderNextBlock(AudioBuffer<float>& outputAudio, const MidiBuffer& midiData, int startSample, int numSamples)
 {
+    if (turnedOff)
+        return;
     const int targetChannels = outputAudio.getNumChannels();
 
     MidiBuffer::Iterator midiIterator(midiData);

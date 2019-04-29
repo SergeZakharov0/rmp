@@ -201,7 +201,7 @@ public:
 class rmpSynth
 {
 public:
-    rmpSynth()
+    rmpSynth(CriticalSection &_lock)
     {
         soundsumBuffer.setSize(2, 256);
         layersumBuffer.setSize(2, 256);
@@ -237,6 +237,7 @@ public:
     double getSampleRate() const noexcept { return sampleRate; }
 
     void renderNextBlock(AudioBuffer<float>& outputAudio, const MidiBuffer& inputMidi, int startSample, int numSamples);
+    void turnOff();
 
     void setMinimumRenderingSubdivisionSize(int numSamples, bool shouldBeStrict = false) noexcept
     {
@@ -245,6 +246,7 @@ public:
     }
 
     CriticalSection lock;
+    bool turnedOff = false;
 protected:
 
     friend class InstrBuilder;
