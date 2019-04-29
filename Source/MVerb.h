@@ -250,9 +250,9 @@ public:
                     break;
             case SIZE:
                     Size = (0.95 * value) + 0.05;
-					allpassFourTap[0].Clear();
-					allpassFourTap[1].Clear();
-					allpassFourTap[2].Clear();
+					//allpassFourTap[0].Clear();
+					//allpassFourTap[1].Clear();
+					//allpassFourTap[2].Clear();
 					allpassFourTap[3].Clear();
                     allpassFourTap[0].SetLength(0.020 * SampleRate * Size);
                     allpassFourTap[1].SetLength(0.060 * SampleRate * Size);
@@ -260,10 +260,10 @@ public:
                     allpassFourTap[3].SetLength(0.089 * SampleRate * Size);
                     allpassFourTap[1].SetIndex(0,0.006 * SampleRate * Size, 0.041 * SampleRate * Size, 0);
                     allpassFourTap[3].SetIndex(0,0.031 * SampleRate * Size, 0.011 * SampleRate * Size, 0);
-					staticDelayLine[0].Clear();
-					staticDelayLine[1].Clear();
-					staticDelayLine[2].Clear();
-					staticDelayLine[3].Clear();
+					//staticDelayLine[0].Clear();
+					//staticDelayLine[1].Clear();
+					//staticDelayLine[2].Clear();
+					//staticDelayLine[3].Clear();
                     staticDelayLine[0].SetLength(0.15 * SampleRate * Size);
                     staticDelayLine[1].SetLength(0.12 * SampleRate * Size);
                     staticDelayLine[2].SetLength(0.14 * SampleRate * Size);

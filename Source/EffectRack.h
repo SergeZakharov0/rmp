@@ -96,15 +96,15 @@ public:
     {
 
 		mreverb.setSampleRate(sampleRate);
-		mreverb.setParameter(MVerb<float>::DAMPINGFREQ, 0.9);
-		mreverb.setParameter(MVerb<float>::DENSITY, 0.5);
-		mreverb.setParameter(MVerb<float>::BANDWIDTHFREQ, 0.1);
+		mreverb.setParameter(MVerb<float>::DAMPINGFREQ, 0.0028);
+		mreverb.setParameter(MVerb<float>::DENSITY, 0.002);
+		mreverb.setParameter(MVerb<float>::BANDWIDTHFREQ, 0.5);
 		mreverb.setParameter(MVerb<float>::DECAY, 0.5);
-		mreverb.setParameter(MVerb<float>::PREDELAY, 0.);
-		mreverb.setParameter(MVerb<float>::SIZE, 0.5);
+		mreverb.setParameter(MVerb<float>::PREDELAY, 0.5);
 		mreverb.setParameter(MVerb<float>::GAIN, 1.);
 		mreverb.setParameter(MVerb<float>::MIX, 0.5);
-		mreverb.setParameter(MVerb<float>::EARLYMIX, 0.75);
+		mreverb.setParameter(MVerb<float>::EARLYMIX, 0.5);
+		mreverb.setParameter(MVerb<float>::SIZE, 0.75);
 
     };
 	~rmpReverb() = default;
@@ -115,8 +115,8 @@ protected:
     void syncParams()
     {
 		mreverb.setParameter(MVerb<float>::MIX, getParamValue("dryWet"));
-		mreverb.setParameter(MVerb<float>::SIZE, getParamValue("roomSize"));
-		mreverb.setParameter(MVerb<float>::DENSITY, getParamValue("width"));
+		mreverb.setParameter(MVerb<float>::DENSITY, 1.0 - getParamValue("width") );
+		mreverb.setParameter(MVerb<float>::DECAY, getParamValue("roomSize"));
  
     };
 	MVerb<float> mreverb;
